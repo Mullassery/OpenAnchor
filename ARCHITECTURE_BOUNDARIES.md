@@ -51,25 +51,28 @@
 
 ## Responsibility Matrix
 
-### PyTokenCalc's ONLY Job: Count Tokens Accurately
+### PyTokenCalc's ONLY Job: Count Total Tokens
 
 | Question | Answer | Who Answers |
 |----------|--------|-------------|
-| "How many tokens did this use?" | **INT** | **PyTokenCalc** ✅ |
+| "How many total tokens did this use?" | **INT** | **PyTokenCalc** ✅ |
 | "How many input vs output tokens?" | INT + INT | **PyTokenCalc** ✅ |
 | "Tokens per modality (text/image)?" | BREAKDOWN | **PyTokenCalc** ✅ |
 | "What's the provider?" | STRING | **PyTokenCalc** ✅ |
 | "What's the exact model?" | STRING | **PyTokenCalc** ✅ |
 
-### OpenAnchor's Job: Explain Those Tokens
+### OpenAnchor's Job: Explain Those Total Tokens
 
 | Question | Answer | Who Answers |
 |----------|--------|-------------|
-| "WHERE were those tokens spent?" | ATTRIBUTION | **OpenAnchor** ✅ |
+| "HOW were tokens distributed?" | ATTRIBUTION* | **OpenAnchor** ✅ |
+| "System prompt vs context vs user input?" | BREAKDOWN | **OpenAnchor** ✅ |
 | "WHY those tokens?" | EXPLANATION | **OpenAnchor** ✅ |
 | "Did anything change?" | PATTERNS | **OpenAnchor** ✅ |
 | "Is it growing?" | TRENDS | **OpenAnchor** ✅ |
 | "What should we do?" | RECOMMENDATIONS | **OpenAnchor** ✅ |
+
+*Attribution = Breaking down TOTAL tokens by component (system prompt, context, user input, etc). PyTokenCalc provides the TOTAL; OpenAnchor explains how it was used.
 
 ### What NEITHER Does
 
@@ -98,13 +101,17 @@
                      │
        ┌─────────────▼──────────────────────┐
        │ Token Count Event Generated:       │
+       │ (PyTokenCalc responsibility)       │
        │ {                                  │
-       │   input_tokens: 3200,              │
-       │   output_tokens: 450,              │
-       │   model: "claude-3-5-sonnet",      │
+       │   input_tokens: 3200,    ← TOTAL  │
+       │   output_tokens: 450,    ← TOTAL  │
+       │   by_modality: {text: 3500, ...}, │
+       │   model: "claude-3-5-sonnet",     │
        │   provider: "anthropic",           │
        │   timestamp: "2026-07-15T10:00Z"   │
        │ }                                  │
+       │ NOTE: No breakdown by component   │
+       │ (system vs context vs user input) │
        └─────────────┬──────────────────────┘
                      │
           ┌──────────▼──────────────────────┐

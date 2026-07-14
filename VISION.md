@@ -170,8 +170,12 @@ Integrate with:
 ## Scope: IN vs OUT
 
 ### STRICTLY IN-SCOPE
-- Token event collection and transformation
-- Attribution breakdown by component
+- **Token attribution breakdown** (of total tokens from PyTokenCalc):
+  - System prompt contribution
+  - User input contribution
+  - Conversation history contribution
+  - Retrieval context contribution
+  - Model overhead contribution
 - Pattern detection (anomalies, trends, drift)
 - Observability signal generation
 - Integration with observability platforms
@@ -203,16 +207,18 @@ Integrate with:
 
 ### What OpenAnchor Consumes FROM PyTokenCalc
 ```
-PyTokenCalc Output (Token Counts):
-├─ Token count (exact number)
+PyTokenCalc Output (TOTAL Token Counts):
+├─ Total input tokens (exact number - no breakdown)
+├─ Total output tokens (exact number - no breakdown)
+├─ By modality (text tokens, image tokens - automatic breakdown)
 ├─ Model name (specific model used)
 ├─ Provider name (OpenAI, Anthropic, etc)
-├─ Input tokens (user + context)
-├─ Output tokens (model response)
-├─ By modality (text tokens, image tokens, etc)
-└─ Metadata (timestamp, user_id, session_id, etc)
+└─ Metadata (timestamp, user_id, session_id, context data)
 
-↓ OpenAnchor consumes this data for attribution/pattern detection
+NOTE: PyTokenCalc provides TOTALS ONLY
+      OpenAnchor breaks down TOTALS by component
+
+↓ OpenAnchor consumes these totals + context for attribution
 ```
 
 ### What OpenAnchor Does NOT Do
