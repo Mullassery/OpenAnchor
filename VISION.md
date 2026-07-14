@@ -1,8 +1,10 @@
 # OpenAnchor — Vision & Scope
 
-**OpenAnchor is the Token Consumption Intelligence Platform for LLM systems.**
+**OpenAnchor is the Token Consumption Intelligence Platform.**
 
-Built on PyTokenCalc (token accounting foundation), OpenAnchor provides observability, attribution, pattern detection, and optimization intelligence for AI token consumption.
+OpenAnchor consumes token counts produced by PyTokenCalc and transforms them into operational intelligence: attribution, pattern detection, trend analysis, and actionable optimization recommendations.
+
+**Relationship:** OpenAnchor sits ON TOP of PyTokenCalc (strict dependency hierarchy).
 
 ---
 
@@ -10,10 +12,18 @@ Built on PyTokenCalc (token accounting foundation), OpenAnchor provides observab
 
 OpenAnchor solves the intelligence problem in multi-LLM development:
 
-> **Teams run expensive AI systems but have no visibility into why tokens are consumed, where they're consumed, or what actions to take to improve efficiency.**
+> **Teams track token consumption but don't understand it: Why did costs spike? Where are tokens actually spent? What should we do about it?**
 
-PyTokenCalc answers: "How many tokens were used?"  
-OpenAnchor answers: "Why were they used, what changed, and how can we optimize?"
+### Division of Responsibility
+
+| Question | Answered By |
+|----------|-------------|
+| "How many tokens were used?" | PyTokenCalc (token counting) |
+| "How many tokens by modality (text/image)?" | PyTokenCalc (breakdown) |
+| "Why were those tokens used?" | **OpenAnchor (attribution)** |
+| "What changed?" | **OpenAnchor (pattern detection)** |
+| "What's the trend?" | **OpenAnchor (trend analysis)** |
+| "What should we do?" | **OpenAnchor (recommendations)** |
 
 ---
 
@@ -120,24 +130,40 @@ Integrate with:
 
 ## What OpenAnchor IS NOT
 
-❌ **NOT responsible for:**
-- Token counting (PyTokenCalc does this)
-- Context window calculation (PyTokenCalc)
-- Tokenizer implementation (PyTokenCalc)
-- Cost calculation (PyTokenCalc)
-- Model management (frameworks handle this)
-- LLM API integration (frameworks handle this)
+### ✅ STRICTLY PyTokenCalc's Responsibility (Never OpenAnchor)
+❌ **NOT token counting** → PyTokenCalc does this
+  - Does not count tokens
+  - Does not manage tokenizers
+  - Does not integrate with APIs
+  - Does not cache token counts
 
-❌ **NOT a:**
-- Middleware wrapper (observability layer, not execution layer)
-- Cost calculator (intelligence layer, not accounting layer)
-- Optimization engine (recommendations, not auto-execution)
-- Alerting system (signals provided, integration is user's responsibility)
+❌ **NOT cost calculation** → PyTokenCalc handles this
+  - Does not calculate costs from tokens
+  - Does not manage pricing data
+  - Does not track budgets
 
+### ✅ STRICTLY Separate Projects (Never OpenAnchor)
+❌ **NOT a middleware wrapper** → Frameworks handle execution
+  - Does not intercept LLM calls
+  - Does not wrap models
+  - Does not manage APIs
+
+❌ **NOT an optimization engine** → Separate service
+  - Does not automatically optimize
+  - Does not execute optimizations
+  - Does not modify behavior
+
+❌ **NOT a complete observability system** → Use platforms
+  - Does not provide dashboards (Grafana does)
+  - Does not store data (ClickHouse, etc do)
+  - Does not generate alerts (platforms do)
+
+### ✅ STRICTLY Integration Points (OpenAnchor Consumes, Doesn't Produce)
 ❌ **NOT replacing:**
+- PyTokenCalc (we depend on it)
 - LangChain, LlamaIndex (we integrate with them)
 - Observability platforms (we feed data into them)
-- Model selection frameworks (we provide signals)
+- Model selection frameworks (we provide signals, not decisions)
 
 ---
 
@@ -173,12 +199,81 @@ Integrate with:
 
 ---
 
+## Integration With PyTokenCalc
+
+### What OpenAnchor Consumes FROM PyTokenCalc
+```
+PyTokenCalc Output (Token Counts):
+├─ Token count (exact number)
+├─ Model name (specific model used)
+├─ Provider name (OpenAI, Anthropic, etc)
+├─ Input tokens (user + context)
+├─ Output tokens (model response)
+├─ By modality (text tokens, image tokens, etc)
+└─ Metadata (timestamp, user_id, session_id, etc)
+
+↓ OpenAnchor consumes this data for attribution/pattern detection
+```
+
+### What OpenAnchor Does NOT Do
+✅ Never counts tokens (PyTokenCalc does this)
+✅ Never calculates pricing (PyTokenCalc can do this)
+✅ Never manages APIs (PyTokenCalc manages tokenizer APIs)
+✅ Never caches token counts (PyTokenCalc handles caching)
+
+### OpenAnchor Data Flow Example
+```
+User calls LLM with code review request
+   ↓
+LLM library (LangChain, etc)
+   ↓
+PyTokenCalc: "Count tokens for this request"
+   ↓
+PyTokenCalc Returns: {
+     input_tokens: 3200,
+     output_tokens: 450,
+     model: "claude-3-5-sonnet",
+     timestamp: "2026-07-15T10:00:00Z"
+   }
+   ↓
+OpenAnchor: "Analyze this token event"
+   ↓
+OpenAnchor Returns: {
+     attribution: {
+        system_prompt: 500,
+        user_code: 1200,
+        conversation_history: 1000,
+        model_overhead: 500
+     },
+     patterns: ["context_growing"],
+     recommendations: ["compress_history"]
+   }
+```
+
+### Boundary: What Each Project Owns
+
+**PyTokenCalc is responsible for:**
+✅ Token counting accuracy (99%+)
+✅ Supporting 20+ providers
+✅ Local + API tokenizers
+✅ Caching strategy
+✅ Exact token breakdown by modality
+
+**OpenAnchor is responsible for:**
+✅ Consuming token counts from PyTokenCalc
+✅ Attribution (who consumed tokens)
+✅ Pattern detection (what changed)
+✅ Trend analysis (is it growing?)
+✅ Recommendations (what to do)
+
+---
+
 ## Design Principles
 
-### 1. PyTokenCalc is Foundation
-OpenAnchor consumes token accounting events produced by PyTokenCalc.
-We never re-implement tokenization, counting, or cost calculation.
-PyTokenCalc is the source of truth.
+### 1. PyTokenCalc is Foundation (Strict)
+OpenAnchor depends on PyTokenCalc for all token accounting.
+We NEVER re-implement: tokenization, token counting, cost calculation, model APIs.
+PyTokenCalc is the single source of truth for token counts.
 
 ### 2. Observability First
 OpenAnchor is an observability layer, not an optimization layer.
