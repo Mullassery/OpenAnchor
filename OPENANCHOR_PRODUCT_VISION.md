@@ -1,356 +1,445 @@
-# OpenAnchor: Cost-Optimization Middleware for Any Agent Framework
+# OpenAnchor: Simple Cost Optimization for LLM Agents
 
-**What is OpenAnchor?** An open-source middleware layer that automatically optimizes LLM costs for **any agent framework** — Cursor, Claude Code, Codex CLI, LangChain, Deep Agents, or custom agents.
+**What is OpenAnchor?** A Python library backed by Rust that intercepts LLM calls, optimizes them, and reports what was saved.
 
-**One tagline:** "Add OpenAnchor to your agent. Same workflow. 60% cheaper."
+**One tagline:** "Wrap your LLM. See the savings."
+
+```python
+from openanchor import CostOptimizer
+
+optimizer = CostOptimizer(api_key="sk-...")
+llm = optimizer.wrap(your_llm)
+
+response = llm.invoke("Analyze this PDF...")
+print(optimizer.cost_meter.report())
+# Saved 23% via DocIngest + ContextCompressor
+```
 
 ---
 
-## The Problem: Cost Blindness in Agent Frameworks
+## The Problem: LLM Teams Are Blind to Waste
 
-### Problem 1: Agent Builders Are Locked Into High-Cost Decisions
-- **Model lock-in:** Pick Claude Opus in month 1, run it forever (never discover Gemini Flash is 99.7% cheaper)
-- **Provider lock-in:** Start on Groq for Llama 70B ($0.59/M), never discover DeepInfra same model ($0.23/M)
-- **No discovery:** 625x price variance across models/providers for same task quality; users pay blind
+### Problem 1: Obvious Waste Goes Unoptimized
+- **PDF processing:** 97K tokens raw text → 20K Markdown (users don't know to compress)
+- **Long sessions:** Full context re-sent every turn → 70% wasted re-transmission (users don't realize)
+- **MCP overhead:** Tool schemas loaded even if unused → 50K wasted tokens (users don't see it)
+- **Output verbosity:** LLM writes 10K tokens when 2K needed → users accept it (don't know they can constrain it)
 
-### Problem 2: Known Cost Spikes Are Invisible Until Too Late
-- **PDF processing:** 97K tokens raw → 20K Markdown (79% waste, happens every time)
-- **MCP overhead:** 55K tokens for tool schemas → 8.5K lazy-loaded (85% waste)
-- **Long sessions:** Full context re-sent every turn → rolling summarization (70% waste)
-- **Tool bloat:** All 20 skills loaded → only 2-3 needed (85% waste)
+### Problem 2: No Visibility Into Cost Drivers
+- Users see "$47/day" but don't know where it's spent
+- Is it PDFs? Long sessions? Too many tools? Wrong model?
+- Cost spikes happen; users only notice on monthly bill
+- No action taken because root cause is invisible
 
-### Problem 3: Frameworks Don't Optimize Automatically
-- **Cursor:** Reports token count, no optimization
-- **Claude Code:** Manual cost guidelines, but no enforcement
-- **Codex CLI:** Terminal-native, but no cost tracking
-- **LangChain:** Flexible, but cost is user's problem
-- **Deep Agents:** Powerful, but expensive by default
+### Problem 3: Optimizing Manually Is Painful
+- Users have to manually chunk PDFs
+- They have to manually load MCP tools
+- They have to manually summarize long contexts
+- They have to manually constrain output format
+- Nobody does this consistently
 
-**Result:** Teams spend 40-80% more on LLM APIs than necessary. They don't know it because the waste is invisible.
+**Result:** Teams waste 15-30% of LLM spend on avoidable inefficiency. They don't fix it because they don't see it.
 
 ---
 
 ## What Is OpenAnchor?
 
-**A cost-optimization middleware that sits between agent frameworks and LLM APIs.**
+**A Python library that wraps your LLM and optimizes the request/response flow.**
 
-**You keep using your favorite framework (Cursor, Claude Code, LangChain).** OpenAnchor transparently optimizes cost without you changing anything.
+Intercepts at two points:
+
+1. **Request (Incoming):** Optimize the prompt before it hits the LLM
+2. **Response (Outgoing):** Track what was saved, measure quality, report to user
 
 ### How It Works
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│                                                          │
-│  Your Agent Framework                                   │
-│  (Cursor | Claude Code | Codex CLI | LangChain | etc)  │
-│                                                          │
-└──────────────┬───────────────────────────────────────────┘
-               │
-               ↓ Agent makes LLM call
-               │
-┌──────────────────────────────────────────────────────────┐
-│                                                          │
-│  OpenAnchor Middleware (Transparent)                    │
-│  ├─ Detect: What kind of task? (code, docs, chat, etc) │
-│  ├─ Spike detection: Which cost patterns apply?         │
-│  ├─ Auto-optimize:                                      │
-│  │  ├─ DocIngest (PDFs → Markdown)                     │
-│  │  ├─ LazyMCP (only load needed tools)               │
-│  │  ├─ SkillLoader (load skills externally)           │
-│  │  ├─ ModelRouter (cheapest capable model)           │
-│  │  ├─ ProviderRouter (cheapest inference provider)   │
-│  │  ├─ ContextCompressor (rolling summarization)      │
-│  │  ├─ OutputCompressor (semantic compression)        │
-│  │  ├─ Caveman (output token reduction)               │
-│  │  └─ ResponseCache (avoid re-querying)              │
-│  ├─ Quality guardian: A/B test optimization            │
-│  └─ Cost meter: Report what was saved                  │
-│                                                          │
-└──────────────┬───────────────────────────────────────────┘
-               │
-               ↓ Optimized input (30-70% fewer tokens)
-               │
-┌──────────────────────────────────────────────────────────┐
-│  LLM APIs (OpenAI, Anthropic, Google, etc)              │
-└──────────────────────────────────────────────────────────┘
+Your Agent (LangChain, Claude Code, custom Python)
+    ↓
+llm = optimizer.wrap(your_llm)
+    ↓
+[REQUEST INTERCEPTION]
+├─ Optimize prompt (DocIngest, LazyMCP, etc)
+├─ Reduce tokens by 15-30%
+└─ Pass to LLM
+    ↓
+LLM API (OpenAI, Anthropic, Google, etc)
+    ↓
+[RESPONSE INTERCEPTION]
+├─ Track actual cost
+├─ Calculate savings
+├─ A/B test quality (did optimization break anything?)
+└─ Report to user
+    ↓
+Response + Cost Report
 ```
 
-**No UI. No framework switching. No learning curve. Drop-in optimization.**
+**That's it. That's the entire product.**
+
+### Core Optimizations (5 Techniques)
+
+Applied automatically to every LLM call:
+
+| Optimization | What It Does | Typical Savings |
+|---|---|---|
+| **DocIngest** | PDFs: 97K raw → 20K Markdown | 40% (on PDF-heavy tasks) |
+| **LazyMCP** | Load only semantically-relevant tools | 20-30% (on tool-heavy tasks) |
+| **SkillLoader** | Load skills externally, not in context | 30-40% (if skills present) |
+| **ContextCompressor** | Summarize old turns in long sessions | 50-70% (on long sessions only) |
+| **Caveman** | Compressed output format constraints | 15-25% (real-world, all tasks) |
+
+**Average across all tasks: 15-30% savings**
+
+(Some tasks save 60%+, some save 5%, depends entirely on task type)
 
 ---
 
 ## Core Capabilities
 
-### 1. Automatic Cost Spike Detection & Interception (9 Optimizations)
+### 1. Request Optimization (5 Techniques)
 
-| Spike | What Happens | Auto-Fix | Savings |
-|-------|--------------|----------|---------|
-| **Cloud Model Pricing** | Locked into old model choice; miss price drops (625x variance) | ModelIntelligence: daily pricing tracker + auto-benchmark on real tasks + one-click switching | 50-75% |
-| **Open-Source API Lock-In** | Llama 70B: Groq $0.59/M vs DeepInfra $0.23/M; users don't know | ProviderRouter: track 10+ providers daily + recommend cheaper alternative + one-click switch | 40-70% |
-| **PDF Processing** | 97K raw tokens vs 20K Markdown | DocIngest: auto-RAG pipeline (PyMuPDF → OCR → Markdown → chunks) | 60-89% |
-| **MCP Overhead** | 55K tokens for tool schemas on start | LazyMCP: load only semantically-relevant tools | 46-70% |
-| **Skill Bloat** | All 20 skills loaded; only 2-3 needed | SkillLoader: task-aware skill loading (external, not in context) | 60-80% |
-| **Long Sessions** | Full history re-sent every turn | ContextCompressor: rolling summarization of old turns | 70% |
-| **Tool Result Bloat** | Raw tool outputs inflate context | OutputCompressor: semantic extraction of task-relevant data | 70-90% |
-| **Output Tokens** | LLM writes verbose outputs | Caveman: compressed output constraints (drop articles, use arrows) | 65% output reduction (15-25% real-world) |
-| **Repeated Queries** | Same query costs every time | ResponseCache: semantic caching on repeated queries | 73% on high-repetition |
+Applied before LLM sees the prompt:
 
-**Total: 60% average cost reduction** across typical workloads.
+```python
+optimizer = CostOptimizer(api_key="sk-...")
+llm = optimizer.wrap(your_llm)
 
-### 2. Continuous Model Discovery (ModelIntelligence Engine)
+response = llm.invoke("Analyze this PDF...")
+# Under the hood:
+# 1. Detect: "This is a PDF analysis task"
+# 2. Apply optimizations:
+#    - DocIngest: Convert PDF to Markdown
+#    - LazyMCP: If tools present, load only relevant ones
+#    - SkillLoader: Load skills externally
+#    - ContextCompressor: Summarize old context (if long session)
+#    - Caveman: Add output format constraints
+# 3. Send optimized prompt to LLM
+```
 
-**Cloud Models:**
-- Daily pricing crawler (20+ providers: OpenAI, Anthropic, Google, Mistral, etc.)
-- Model registry (100+ models with benchmarks, latency, context windows)
-- Task-pattern benchmarking (auto-test new models on YOUR tasks)
-- Recommendation engine (show: "Save $X/month by switching to Model Y")
-- One-click adoption with regression testing + automatic fallback
+**Transparency:** Exactly which optimizations ran, and why.
 
-**Open-Source Model APIs:**
-- Multi-provider pricing tracker (Llama 70B across Groq/Together/DeepInfra/Fireworks/etc)
-- Quality/speed tradeoff visibility ("Groq faster, DeepInfra cheaper")
-- Price change detection (monitor daily, alert on drops)
-- One-click provider switch with quality regression test
+### 2. Response Tracking (Cost Meter)
+
+After LLM returns, OpenAnchor:
+
+```python
+print(optimizer.cost_meter.report())
+# {
+#   "optimizations_applied": ["DocIngest", "Caveman"],
+#   "tokens_before": 42000,
+#   "tokens_after": 31500,
+#   "tokens_saved": 10500,
+#   "cost_before": "$0.34",
+#   "cost_after": "$0.25",
+#   "savings": "27%"
+# }
+```
+
+**Per-operation visibility.** Know exactly where money went.
 
 ### 3. Quality Assurance
 
-- **A/B testing:** Run optimization on last 20 tasks of each type
-- **Regression prevention:** If quality <95% match, disable optimization automatically
-- **Full transparency:** Show exactly what was optimized and what was saved
+- **A/B test subset:** Run optimization on 10% of tasks, measure quality
+- **Auto-disable:** If quality drops <95% match, disable optimization for that task type
+- **Log everything:** Full trace of what ran, what changed, what quality impact
 
-### 4. Real-Time Cost Meter
+### 4. Integration: LangChain (v0.1 Focus)
 
-- Per-operation cost breakdown (which action cost what)
-- Cost attribution per optimization (which saved how much)
-- Monthly projection + savings tracking
-- Integration with PyCostAudit-Multi (all LLM APIs, real-time pricing)
+```python
+from openanchor import CostOptimizer
+from langchain.agents import AgentExecutor
 
-### 5. Enterprise Controls (Built-In)
+optimizer = CostOptimizer(api_key="sk-...")
+agent = AgentExecutor(
+    agent=agent,
+    tools=tools,
+    llm=optimizer.wrap(llm)  # That's it
+)
 
-- **Team management:** RBAC, cost budgets per team/user
-- **Cost analytics:** By team, by user, by task type, by model, by provider
-- **Audit logs:** 7-year retention for compliance
-- **Compliance:** SOC2, GDPR, HIPAA-ready
-- **Saved templates:** Teams share optimized patterns
-- **Webhooks:** Slack, BigQuery, Datadog integrations
+result = agent.invoke({"input": "..."})
+cost = optimizer.cost_meter.report()
+```
+
+Works with any LangChain agent, chain, or LLM call.
+
+### 5. What's NOT in v0.1
+
+❌ ModelIntelligence (model discovery/switching) → v0.2
+❌ ProviderRouter (multi-provider discovery) → v0.2
+❌ Enterprise dashboards (RBAC, audit logs) → v0.2
+❌ Team management features → v0.2
+❌ Compliance certifications (SOC2, GDPR) → v0.2
+
+**v0.1 is: Optimize + Track + Report. That's all.**
 
 ---
 
 ## How It Integrates
 
-### Option 1: Python SDK (Most Common)
+### Option 1: LangChain (Primary Integration)
+
 ```python
 from openanchor import CostOptimizer
+from langchain.chat_models import ChatOpenAI
+from langchain.chains import LLMChain
 
-# Add to your LangChain / Deep Agents / custom agent
-optimizer = CostOptimizer(
-    api_key="sk-...",
-    model="claude-3-5-sonnet",
-    enable_cost_meter=True
+optimizer = CostOptimizer(api_key="sk-...")
+llm = ChatOpenAI(model="gpt-4")
+llm = optimizer.wrap(llm)  # One line
+
+# Use in chains normally
+chain = LLMChain(llm=llm, prompt=prompt)
+result = chain.run(input="...")  # Automatically optimized
+
+print(optimizer.cost_meter.report())  # See savings
+```
+
+### Option 2: Deep Agents / LangGraph
+
+```python
+from openanchor import CostOptimizer
+from langchain.agents import create_tool_calling_agent, AgentExecutor
+
+optimizer = CostOptimizer(api_key="sk-...")
+
+# Wrap agent's LLM
+agent = create_tool_calling_agent(
+    llm=optimizer.wrap(ChatOpenAI()),
+    tools=tools,
+    prompt=prompt
 )
 
-# Wrap your LLM calls
-response = optimizer.optimized_call(
-    prompt="Analyze this PDF...",
-    context={"file": "report.pdf"}
-)
+executor = AgentExecutor(agent=agent, tools=tools)
+result = executor.invoke({"input": "..."})  # Automatically optimized
 
-# Get cost report
 print(optimizer.cost_meter.report())
-# {
-#   "optimizations_applied": ["DocIngest", "LazyMCP", "SkillLoader"],
-#   "total_savings": "62%",
-#   "cost_before": "$0.45",
-#   "cost_after": "$0.17"
-# }
 ```
 
-### Option 2: Node.js SDK
-```javascript
-const { CostOptimizer } = require("openanchor");
+### Option 3: Custom Python Agent
 
-const optimizer = new CostOptimizer({
-  apiKey: "sk-...",
-  model: "claude-3-5-sonnet",
-  enableCostMeter: true
-});
+```python
+from openanchor import CostOptimizer
+import anthropic
 
-const response = await optimizer.optimizedCall({
-  prompt: "Analyze this PDF...",
-  context: { filePath: "./report.pdf" }
-});
+optimizer = CostOptimizer(api_key="sk-...")
+client = anthropic.Anthropic()
+client = optimizer.wrap(client)  # Wrap the SDK
 
-console.log(optimizer.costMeter.report());
+message = client.messages.create(
+    model="claude-3-5-sonnet",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "..."}]
+)
+
+print(optimizer.cost_meter.report())  # See savings
 ```
 
-### Option 3: Rust Library (High-Performance)
-```rust
-use openanchor::CostOptimizer;
+### Option 4: Environment Variables (Zero-Config)
 
-let optimizer = CostOptimizer::new(
-    ApiKey::from("sk-..."),
-    Model::Claude3_5Sonnet
-)?;
-
-let response = optimizer.optimized_call(
-    "Analyze this PDF...",
-    &context
-).await?;
-
-println!("{}", optimizer.cost_meter().report());
-```
-
-### Option 4: Cursor Plugin (If API Available)
-- Detects when Cursor launches an agent
-- Intercepts LLM calls
-- Applies optimizations transparently
-- Shows cost savings in Cursor's UI
-
-### Option 5: Environment Variable Interception
 ```bash
 export OPENANCHOR_API_KEY="sk-..."
 export OPENANCHOR_ENABLED=true
 
-# Your agent runs normally, OpenAnchor intercepts calls
+# Any Python script with LLM calls gets optimized automatically
 python my_agent.py
 ```
+
+Python SDK auto-patches all LLM imports on load.
 
 ---
 
 ## Market Opportunity
 
-**TAM: $350M+** (agents builders globally)
-- Cursor: 500K+ paid developers
-- Claude Code users: 400K+
-- OpenAI API users: 2M+
-- LangChain/LlamaIndex users: 1.2M+
-- **Total: 1.2M+ agent builders, 60-75% can benefit from cost optimization**
+**Real TAM: $50-100M** (honest assessment)
 
-**Segment:** Teams deploying agents at scale (not individual developers)
-- Mid-market: $20K-100K/month LLM spend
-- Enterprise: $100K-1M+/month LLM spend
+**Total addressable users:**
+- LangChain ecosystem: 50-100K teams actively using agents
+- Teams with painful LLM bills: 20-50K teams ($20K+/month spend)
+- Mid-market + enterprise only: NOT individual developers
 
-**Pricing:** Freemium → Pro ($19/mo) → Team ($49/mo) → Enterprise
-- Free: $10/month equivalent token optimization
-- Pro: Unlimited optimization, 3 users, cost dashboard
-- Team: Everything + RBAC, audit logs, SSO
-- Enterprise: Custom pricing, SLA, compliance
+**Why not SMB/Individuals:**
+- Cursor users (500K paid): Already get IDE-level optimization; won't add middleware
+- Claude Code users (100K): Mostly single-developer; cost isn't a priority
+- Hobbyists: Free tier, cost isn't a concern
 
-**Payback:** Average team saves 60-75% on LLM spend. At $49/mo, break-even if spending >$65/mo on agents (typical spend: $500-5000/mo for scale).
+**Real market:** Teams already paying $20K-100K/month on LLM APIs who see bill shock and want solutions.
+
+**Pricing:** Free → $19/mo → $49/mo → Enterprise
+- Free: Up to $10/month LLM spend (try it out)
+- Pro: $19/mo (small teams, <5 users)
+- Team: $49/mo (mid-market, 5+ users, includes cost meter)
+- Enterprise: Custom (audit logs, compliance, in v0.2+)
+
+**Payback math:**
+- Save 15-30% = typical $50K/month spend → $7.5K-15K/month savings
+- $49/mo cost = pays for itself on day 1
+- Real value: visibility into waste, then fixing it
 
 ---
 
 ## Competitive Position
 
-**vs Cursor:** 
-- Cursor is IDE-focused (write code 10x faster)
-- OpenAnchor is cost-focused (run agents 60% cheaper)
-- Complementary, not competitive
-- "I use Cursor to write code, OpenAnchor to run agents cheaply"
+**The Reality:**
+
+Cursor ($2.6B ARR, $60B backing, 500K+ paid users) will eventually add cost optimization. **This product has 12-18 months before Cursor copies it.**
+
+**vs Cursor:**
+- Cursor is IDE-focused (optimize code writing)
+- OpenAnchor optimizes agent execution cost
+- Not competitive; Cursor will probably acquire/copy features
+- Opportunity: Get market share while Cursor is focused on coding, not cost
 
 **vs Claude Code:**
-- Claude Code is CLI-focused on single-model agents
-- OpenAnchor enables multi-model, multi-provider routing
-- Claude Code users benefit most from OpenAnchor
+- Claude Code is single-model CLI agent
+- OpenAnchor works with any model + any LLM SDK
+- Limited adoption; Claude Code users are small subset
+- Real market: LangChain teams, not IDE users
 
-**vs Codex CLI:**
-- Codex is terminal-native agent
-- OpenAnchor optimizes ANY agent (Codex included)
+**vs LangChain Ecosystem:**
+- LangChain is orchestration (how agents work)
+- OpenAnchor is cost optimization (how LLM calls are made cheaper)
+- Orthogonal, not competitive
+- Value: LangChain users add OpenAnchor for savings visibility
 
-**vs LangChain:**
-- LangChain is orchestration framework
-- OpenAnchor is cost optimization middleware
-- Fully compatible; LangChain users add OpenAnchor for 60% savings
+**Why OpenAnchor Wins (Temporarily):**
+1. ✅ **Built by the PyCostAudit team** (credibility on cost tracking)
+2. ✅ **3-line integration** (zero friction)
+3. ✅ **Measured savings** (not theoretical)
+4. ✅ **Open-source** (transparency, community trust)
+5. ✅ **First to market** (before Cursor copies)
 
-**Unique Differentiators:**
-1. ✅ Open-source (no vendor lock-in)
-2. ✅ Framework-agnostic (works with any agent)
-3. ✅ Automatic (zero configuration)
-4. ✅ Model discovery (continuous pricing tracking)
-5. ✅ Provider agnostic (multi-cloud, open-source APIs)
-6. ✅ Enterprise-ready (RBAC, audit, compliance)
+**Realistic Timeline:**
+- v0.1 (3 weeks): Ship core product, LangChain integration
+- Months 2-6: Grow adoption, prove ROI
+- Months 6-12: Paid tier growth, team features
+- Month 12+: Cursor adds native cost optimization
+- Year 2: Evolve from middleware → enterprise cost platform (if successful)
 
 ---
 
 ## Development Timeline
 
-### Week 0: Foundation
-- [ ] PyCostAudit-Multi rewrite (multi-API support, all 20+ cloud providers + 10+ open-source APIs)
-- [ ] Rust middleware skeleton
-- [ ] Cost interception pipeline
-- [ ] Quality guardian framework
+### Week 1: Core Optimization + Python SDK
 
-### Week 1: Core Optimizations
-- [ ] DocIngest (PDF → Markdown, OCR)
-- [ ] LazyMCP (semantic tool loading)
-- [ ] SkillLoader (external skill calling)
-- [ ] ModelRouter (task-based routing)
-- [ ] CostMeter (real-time cost tracking)
+**Rust Core:**
+- [ ] Request interception pipeline
+- [ ] Response tracking (cost meter)
+- [ ] Quality A/B testing framework
+- [ ] 5 core optimizations:
+  - DocIngest (PDF → Markdown)
+  - LazyMCP (semantic tool loading)
+  - SkillLoader (external skill loading)
+  - ContextCompressor (long session summarization)
+  - Caveman (output format constraints)
 
-### Week 2: Model Discovery + SDKs
-- [ ] ModelIntelligence engine (daily pricing tracker)
-- [ ] ProviderRouter (open-source API multi-provider tracking)
-- [ ] Python SDK (pip installable)
-- [ ] Node.js SDK (npm installable)
-- [ ] Rust SDK (crates.io)
+**Python SDK:**
+- [ ] `CostOptimizer` class
+- [ ] `wrap(llm)` method (works with any LLM)
+- [ ] `cost_meter.report()` (cost breakdown)
+- [ ] LangChain integration example
+- [ ] Installation (pip install openanchor)
 
-### Week 3: Enterprise + Launch
-- [ ] Cost dashboard (team analytics)
-- [ ] RBAC + audit logs
-- [ ] Documentation + examples
-- [ ] Benchmarks (prove 60% savings)
-- [ ] GitHub release + launch
+### Week 2: Testing + Documentation + Launch
+
+**Testing:**
+- [ ] Unit tests on each optimizer
+- [ ] Quality regression tests (A/B testing)
+- [ ] Cost calculation accuracy (vs real bills)
+- [ ] Integration tests (LangChain, custom agents)
+- [ ] Benchmark: Measure actual 15-30% savings
+
+**Documentation:**
+- [ ] README + quick-start
+- [ ] LangChain integration guide
+- [ ] Cost meter explanation
+- [ ] FAQ (how much does it save? why 15-30% not 60%? etc)
+- [ ] Troubleshooting
+
+**Launch:**
+- [ ] PyPI release (pip install openanchor)
+- [ ] GitHub repository public
+- [ ] Blog post: "We built a cost optimizer for LLM agents"
+- [ ] PyCostAudit user email (you have audience)
+- [ ] HackerNews + Reddit /r/langchain
+
+### Week 3+: v0.2 Planning
+
+**NOT in v0.1 (defer to v0.2):**
+- ModelIntelligence (model discovery)
+- ProviderRouter (multi-provider discovery)
+- Node.js SDK (launch with Python first)
+- Enterprise features (RBAC, audit logs)
+- Cost dashboard (basic metrics only in CLI)
+
+**v0.2 (Month 2):**
+- [ ] Node.js SDK
+- [ ] Model discovery + price tracking
+- [ ] Web dashboard (basic)
+- [ ] Team management (RBAC, cost budgets)
 
 ---
 
 ## Success Metrics (v0.1 Launch)
 
 **Cost Reduction:**
-- Average user saves 60% on typical workloads
-- Typical session: $0.45 → $0.17 cost
+- Average user saves 15-30% on LLM spend (honest, measured)
+- Proven via real customer benchmarks (not theoretical)
+- Some tasks save 60%+, some save 5%; depends on task type
 
 **Adoption:**
-- 1K+ downloads month 1
-- 200+ GitHub stars
-- 50+ integration examples
+- 200+ PyPI downloads in week 1
+- 50+ GitHub stars
+- 10+ LangChain integration examples
+- 20-30 PyCostAudit users (your existing audience) adopt it
 
 **Quality:**
-- Zero regressions shipped (<95% quality = optimization disabled)
-- 100% cost calculation accuracy (matches actual LLM bills)
+- Zero regressions shipped (A/B testing catches quality issues)
+- Cost calculation matches actual LLM API bills (±1%)
+- All optimizations can be disabled per-task if quality issues
 
-**Discovery:**
-- 50%+ of users discover cheaper models/providers within month 1
-- 30%+ adopt cheaper alternative within month 2
+**User Feedback:**
+- Users understand: "This saves money, but not as much as the dashboard claimed"
+- Users report: "The cost meter finally shows me where waste happens"
+- Users stay: <5% churn month 1
 
 ---
 
 ## Risk & Mitigation
 
-**Risk:** Cursor's $60B backing makes them dominant; hard to compete on features
-**Mitigation:** We're not competing on features, only on cost optimization (Cursor has zero)
+**Risk:** Cursor will add cost optimization in 12 months; this becomes obsolete
+**Mitigation:** Move fast. Get to $1M ARR before Cursor copies. Then pivot to enterprise cost platform (RBAC, governance, compliance).
 
-**Risk:** Users already locked into Cursor/Claude Code; hard to get adoption
-**Mitigation:** Middleware approach requires zero switching; integrate via SDK
+**Risk:** LangChain adoption is slow; hard to get traction
+**Mitigation:** Launch to PyCostAudit users first (you have audience). Prove ROI. Then expand to LangChain ecosystem.
 
-**Risk:** LLM pricing changes rapidly; hard to keep pricing tracker accurate
-**Mitigation:** Crawl daily, auto-update registry, alert on changes
+**Risk:** Some optimizations degrade quality for certain tasks
+**Mitigation:** A/B test all optimizations (10% of traffic). Auto-disable if quality <95%. Log everything.
 
-**Risk:** Some optimizations might degrade quality for certain tasks
-**Mitigation:** A/B testing + automatic disable if <95% quality match
+**Risk:** Pricing is wrong; users won't pay $19-49/mo for 15-30% savings
+**Mitigation:** Free tier is generous ($10/month equivalent). Test pricing with early users. Adjust based on feedback.
 
----
+**Risk:** Integration friction; users don't want to modify code
+**Mitigation:** Environment variable interception (zero code). LangChain integration (3 lines). Make adoption frictionless.
 
-## Next Steps
-
-1. **Finalize architecture:** Confirm middleware-only approach ✅
-2. **Create GitHub repo:** Push planning + start development
-3. **Week 0:** PyCostAudit-Multi rewrite + Rust core
-4. **Week 1-2:** SDK development + model discovery
-5. **Week 3:** Enterprise features + launch
-6. **Week 4+:** Community iteration + sales
+**Risk:** Cost calculation is inaccurate; users distrust metrics
+**Mitigation:** Validate against real LLM API bills. Publish accuracy benchmarks. Build trust through transparency.
 
 ---
 
-**OpenAnchor is fully designed. Middleware-only. Framework-agnostic. Ready to build.**
+## Summary
 
-**The only question: When do we start?**
+**OpenAnchor = Simple. Focused. Real.**
+
+Not a billion-dollar platform. Not a Cursor competitor. Not a replacement for LangChain.
+
+**It's a Python library that wraps your LLM, optimizes requests, tracks costs, and shows you what was saved.**
+
+**Week 1-2:** Ship core product (15-30% average savings, 5 optimizations, cost meter)
+**Week 2:** Launch to PyPI + PyCostAudit users
+**Month 1+:** Grow adoption, prove ROI, iterate based on real user feedback
+**Month 6+:** Add paid tier, team features, enterprise capabilities
+**Month 12+:** Cursor adds native cost optimization; pivot to enterprise cost platform
+
+---
+
+**The product is done. It's simple. It's real. Ship it.**
