@@ -1,8 +1,6 @@
-# OpenAnchor: Open-Source Only Stack
+# OpenAnchor: Open-Source Stack Architecture
 
-## Core Principle
-
-**OpenAnchor integrates ONLY open-source projects. No proprietary tools. Full transparency, no vendor lock-in.**
+**OpenAnchor is middleware-only.** No custom UI, no new frameworks. Just a cost-optimization layer that works with any agent framework.
 
 ---
 

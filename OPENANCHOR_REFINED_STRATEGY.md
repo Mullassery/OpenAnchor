@@ -1,308 +1,314 @@
-# OpenAnchor: Refined Product Strategy (Based on PyCostAudit Learnings)
+# OpenAnchor: Technical Strategy & Development Timeline
 
-## Context from PyCostAudit
+**Strategy:** Build cost-optimization middleware that integrates with ANY agent framework via SDKs.
 
-**Problem Identified:** Claude Code users see "$47/day" but don't know where it's spent:
-- 60% from file operations (PDF reads, RAG extraction)
-- 25% from MCP server overhead
-- 10% from long conversation context
-- 5% from model mismatch
+**Not:** Build another agent framework with its own UI.
 
-**Solution PyCostAudit provides:** Real-time cost attribution by operation type
-
-**What OpenAnchor adds:** Automatic cost-spike interception at runtime (not just tracking)
+**Why:** Cursor dominates IDE-based agents ($2.6B ARR). OpenAnchor wins by being framework-agnostic and enabling 60% cost savings in whatever framework users choose.
 
 ---
 
-## The Real Cost Drivers (Per PyCostAudit Research)
+## The Shift
 
-### 1. **MCP Server Overhead** (HIGHEST PRIORITY) ⭐⭐⭐
-- **Cost:** 55,000 tokens before first message with 5 MCP servers connected
-- **Current behavior:** All MCP tool schemas loaded on session start
-- **Problem:** 90% of tools never used in that session
-- **Solution:** Lazy-load only semantically-relevant tool schemas per task
-- **Savings:** 46-70% on session start overhead
-
-### 2. **File/Document Processing** (HIGH PRIORITY) ⭐⭐
-- **Cost:** 2MB PDF = 97,000 tokens raw; same PDF as Markdown = 20,000 tokens
-- **Current behavior:** Raw PDF text injected into context
-- **Problem:** No OCR, no structure, no chunking
-- **Solution:** Smart extraction (PyMuPDF → Markdown) + semantic chunking + RAG
-- **Savings:** 60-80% per document operation
-
-### 3. **Context Bloat from Long Sessions** (HIGH PRIORITY) ⭐⭐
-- **Cost:** 50-turn conversation: 15,000 tokens re-transmitted per turn
-- **Current behavior:** Full history re-sent as input on every turn
-- **Problem:** No compression, no rolling summarization
-- **Solution:** Anchored summarization (compress old turns, keep recent)
-- **Savings:** 70% on long sessions
-
-### 4. **Model Mismatch** (MEDIUM PRIORITY) ⭐
-- **Cost:** Opus 5x more expensive than Sonnet; 80% of tasks don't need Opus
-- **Current behavior:** Single model for all tasks
-- **Problem:** No task-aware routing
-- **Solution:** Classify task complexity → route to cheapest capable model
-- **Savings:** 60-75% cost reduction
-
-### 5. **Skill Loading into Context** (NEW GAP) ⭐
-- **Cost:** Agent has 20 skills; all definitions loaded every session = 30K tokens
-- **Current behavior:** Skills in system prompt always
-- **Problem:** Most skills unused in given session
-- **Solution:** External skill calling (not context); load only relevant skills
-- **Savings:** 60-80% context reduction
-
----
-
-## Architecture: Cost Interception at Runtime
-
+### Old Model (Wrong)
 ```
-User Prompt
-    ↓
-[OpenAnchor Runtime]
-    ├─ Task Classifier: What kind of task? (code, doc review, pdf analysis, etc.)
-    ├─ Spike Detector: Which cost patterns apply? (PDF? MCP? Long context?)
-    ├─ Auto-Optimizer: Apply appropriate fixes
-    │   ├─ DocIngest (if PDF/doc detected)
-    │   ├─ LazyMCP (load only relevant tools)
-    │   ├─ SkillLoader (load only relevant skills externally)
-    │   ├─ ContextCompressor (if conversation long)
-    │   └─ ModelRouter (route to cheapest model)
-    ├─ Quality Guardian: Regression test optimization
-    └─ CostMeter: Track what was saved
-    ↓
-Agent Runtime
-    ↓
-LLM API (with optimized input)
-    ↓
-[Cost Attribution] → CostMeter reports savings
+Build Chainlit Frontend → Build Deep Agents Tab → Hope users switch
 ```
 
-**Key principle:** All optimizations happen BEFORE the LLM sees input. User never knows they're happening; CostMeter reports the savings.
-
----
-
-## MVP v0.1: Rust Backend + Python/Node SDKs
-
-### Rust Core (High-Performance Cost Interception)
-**File:** `/openanchor-rust/`
-
+### New Model (Right)
 ```
-src/
-├─ runtime.rs          # Main interception loop
-├─ task_classifier.rs  # Detect task type → apply optimizations
-├─ spike_detector.rs   # Which cost patterns apply?
-├─ optimizers/
-│   ├─ doc_ingester.rs        # PDF → OCR → Markdown → chunk → index
-│   ├─ mcp_lazy_loader.rs     # Load only semantically relevant tools
-│   ├─ skill_loader.rs        # External skill calling (not context)
-│   ├─ context_compressor.rs  # Rolling summarization
-│   ├─ model_router.rs        # Task complexity → cheapest model
-│   └─ cost_calculator.rs     # Real-time cost tracking (reuse PyCostAudit)
-├─ quality_guardian.rs # Regression testing on optimizations
-└─ cost_meter.rs       # Cost attribution per optimization
-```
-
-**Why Rust:**
-- Performance-critical: every prompt interception must be <10ms
-- Concurrency: handle multiple sessions in parallel
-- Reuse PyCostAudit core: `cost_calculator.rs` can import from PyCostAudit
-
-### Python SDK
-```python
-from openanchor import OpenAnchorRuntime, CostMeter
-
-# Initialize
-guard = OpenAnchorRuntime(
-    model="claude-3-5-sonnet",
-    mcp_servers=["github", "slack", "notion"],  # Lazy-load only relevant
-    skills=["CodeReview", "TestGen", "SecurityAudit"],  # External call
-    enable_doc_ingestion=True,
-    enable_cost_meter=True
-)
-
-# Interception happens automatically
-response = guard.run_agent_task(
-    task="Review this code for security issues",
-    context={"file": "src/auth.rs"}  # OpenAnchor auto-handles PDF extraction, etc.
-)
-
-# Check what was optimized
-print(guard.cost_meter.report())
-# Output:
-# {
-#   "optimizations_applied": ["DocIngest", "LazyMCP", "SkillLoader"],
-#   "cost_savings": {
-#       "MCP": "46% (8.5K tokens saved)",
-#       "DocIngest": "79% (20K tokens saved)",
-#       "SkillLoader": "65% (12K tokens saved)"
-#   },
-#   "total_savings": "62% (40.5K tokens saved)",
-#   "estimated_cost_before": "$0.45",
-#   "actual_cost_after": "$0.17"
-# }
-```
-
-### Node.js SDK
-```javascript
-const { OpenAnchorRuntime } = require("openanchor");
-
-const guard = new OpenAnchorRuntime({
-  model: "claude-3-5-sonnet",
-  mcpServers: ["github", "slack"],
-  skills: ["CodeReview", "TestGen"],
-  enableDocIngestion: true,
-  enableCostMeter: true
-});
-
-const response = await guard.runAgentTask({
-  task: "Analyze this PDF for compliance issues",
-  context: { filePath: "./report.pdf" }
-});
-
-console.log(guard.costMeter.report());
+Build Rust Core → Publish SDKs → Integrate everywhere → Users never switch
 ```
 
 ---
 
-## The Three Pillars of OpenAnchor
+## Architecture: Rust Core + Multi-Language SDKs
 
-### Pillar 1: Real-Time Cost Attribution (from PyCostAudit)
-- Track every operation's cost in real-time
-- Show breakdown by type (MCP, PDF, context, model, etc.)
-- CostMeter widget shows savings per optimization
+### Rust Core (High-Performance Interception)
+**Why Rust?**
+- Cost interception latency critical (<5ms per LLM call)
+- Handle multiple concurrent sessions (async Tokio)
+- Streaming support without buffering
+- Embed in Python/Node SDKs via FFI (PyO3, NAPI)
 
-### Pillar 2: Automatic Spike Interception (NEW)
-- Detect when user is about to trigger a spike
-- Apply optimization automatically before LLM call
-- Never block the user; optimization is invisible
+**Core modules:**
+1. **Task Classifier** — Detect task type (code, docs, chat, reasoning, etc)
+2. **Spike Detector** — Which cost patterns apply to this task?
+3. **Optimizers** — Apply 9 cost reductions:
+   - DocIngest (PDFs → Markdown)
+   - LazyMCP (semantic tool loading)
+   - SkillLoader (external skill calling)
+   - ModelRouter (task-based model selection)
+   - ProviderRouter (multi-provider LLM selection)
+   - ContextCompressor (rolling summarization)
+   - OutputCompressor (semantic extraction)
+   - Caveman (output token reduction)
+   - ResponseCache (semantic caching)
+4. **Quality Guardian** — A/B test each optimization
+5. **CostMeter** — Real-time cost tracking
 
-### Pillar 3: External Skill/Tool Loading (ARCHITECTURAL FIX)
-- Skills are NOT loaded into system prompt
-- Call skills only when needed (via tool_use)
-- Reduce system prompt bloat by 60-80%
-- Task classifier determines which skills are relevant
-
----
-
-## Key Differences from Competitors
-
-| Feature | Claude Code | Deep Agents | Hermes | OpenAnchor |
-|---------|-------------|------------|--------|-----------|
-| **Real-time cost attribution** | None | None | None | ✅ Per-operation breakdown |
-| **Automatic cost-spike interception** | None | Manual config | None | ✅ Auto-detect + fix |
-| **MCP lazy loading** | Partial (Tool Search) | None | None | ✅ Full lazy + semantic match |
-| **Skill external calling** | Skills in context | Skills in context | Skills in context | ✅ External only |
-| **Rust backend** | No | No | No | ✅ High-performance |
-| **Model discovery** | None | Manual | None | ✅ CloudModelIntel + OSS provider tracking |
-| **Cost savings reporting** | None | None | None | ✅ CostMeter dashboard |
-| **PDF auto-RAG** | Manual | Manual | None | ✅ Automatic |
-| **Doc content extraction** | None | None | None | ✅ HTML → Markdown, OCR |
+**Reuses from PyCostAudit:**
+- Cost calculation (pricing.rs)
+- Provider registry (20+ cloud + 10+ open-source)
+- Storage (SQLite for audit logs)
 
 ---
 
-## MVP v0.1 Scope (First 2 Weeks)
+## SDK Layers
 
-**Must Have:**
-1. ✅ **Rust runtime core** — Task classification + spike detection
-2. ✅ **DocIngest** — PDF → OCR → Markdown → RAG (60-80% savings)
-3. ✅ **LazyMCP** — Load only semantically relevant tools (46-70% savings)
-4. ✅ **SkillLoader** — External skill calling, not context (60-80% savings)
-5. ✅ **CostMeter UI** — Real-time cost attribution per optimization
-6. ✅ **Python SDK** — Easy integration for Claude Code users
-7. ✅ **Quality Guardian** — Regression test all optimizations
+### Layer 1: Python SDK (pip install openanchor)
+- Most common use case (LangChain, Deep Agents, custom agents)
+- Wrap any LLM: `llm = optimizer.wrap(your_llm)`
+- LangChain integration built-in
+- Deep Agents integration built-in
 
-**Ship in v0.2:**
-- Context compression (rolling summarization)
-- Model router (task complexity routing)
-- Cloud model discovery (pricing tracking)
-- Open-source provider discovery
+### Layer 2: Node.js SDK (npm install @openanchor/core)
+- JavaScript/TypeScript frameworks
+- Vercel AI SDK integration
+- Same API as Python SDK
 
----
+### Layer 3: Rust SDK (crates.io)
+- High-performance Rust agents
+- No FFI overhead
 
-## Competitive Positioning
+### Layer 4: HTTP API
+- For any other language/framework
+- `POST /optimize` endpoint
 
-**Tagline:** "Automatic cost optimization for AI agents. No config, 60% savings."
-
-**For Claude Code users:** "OpenAnchor pays for itself in 2 weeks."
-
-**For enterprises:** "Reduce LLM spend from $50K/month to $18K/month without changing code."
-
-**For open-source:** "First platform that intercepts cost spikes at runtime."
+### Layer 5: Environment Variable Interception
+- Export `OPENANCHOR_API_KEY` + `OPENANCHOR_ENABLED`
+- Python SDK patches all LLM constructors on import
+- Zero-config for existing agents
 
 ---
 
-## Rust Backend Architecture Rationale
+## Development Timeline
 
-**Why Rust for OpenAnchor (vs PyCostAudit's Rust):**
+### Week 0: Foundation (PyCostAudit Rewrite)
+**Goal:** Multi-API support for cost tracking
 
-1. **Interception latency critical:** Every prompt must be processed in <10ms
-2. **Streaming:** Handle multiple session streams in parallel (async Tokio)
-3. **Memory efficiency:** Chunk large PDFs, compress history, without GC pauses
-4. **FFI boundary:** Reuse PyCostAudit's Rust cost calculation via PyO3
-5. **Deployment:** Embed Rust runtime in Python/Node SDKs without subprocess overhead
+**Tasks:**
+- [ ] Fork PyCostAudit as PyCostAudit-Multi
+- [ ] Add 20+ cloud provider support (OpenAI, Anthropic, Google, Mistral, DeepSeek, etc)
+- [ ] Add 10+ open-source API providers (Groq, DeepInfra, Together, Fireworks, etc)
+- [ ] Real-time pricing crawler (daily updates)
+- [ ] Provider registry with quality/speed metrics
+- [ ] Model benchmarking framework
 
-**Reuse from PyCostAudit:**
-- `cost_tracker.rs` — Real-time cost calculation
-- `pricing.rs` — Model pricing database
-- `recommender.rs` — Optimization suggestions
-- `storage.rs` — SQLite backend for audit logs
-
----
-
-## Success Metrics (v0.1 Launch)
-
-**Cost Reduction:**
-- Average user saves 60% on MCP + DocIngest + SkillLoader
-- Typical session: $0.45 → $0.17 cost
-
-**Accuracy:**
-- Regression testing prevents quality degradation (<5% threshold)
-- Cost calculations match actual LLM API usage
-
-**Adoption:**
-- 1K downloads in first month (target)
-- 100+ GitHub stars (quality signal)
-- Featured on PyCostAudit + AI agent communities
+**Output:** `pycostaudit-multi` package on PyPI (v0.1)
 
 ---
 
-## Building on PyCostAudit
+### Week 1: Rust Core + Core Optimizations
+**Goal:** Functional cost interception with 5 core optimizations
 
-**OpenAnchor is NOT a replacement for PyCostAudit.**
+**Tasks:**
+- [ ] Rust project skeleton (cargo, FFI setup)
+- [ ] Task classifier (code/docs/chat/reasoning)
+- [ ] Spike detector (detect which cost patterns apply)
+- [ ] DocIngest optimizer (PDF → Markdown, OCR fallback)
+- [ ] LazyMCP optimizer (semantic tool loading)
+- [ ] SkillLoader optimizer (external skill calling)
+- [ ] ModelRouter (task complexity → cheapest model)
+- [ ] Quality guardian (A/B testing framework)
+- [ ] CostMeter (real-time cost tracking)
+- [ ] Reuse from PyCostAudit: cost_calculator, pricing, storage
 
-Instead:
-- **PyCostAudit:** Historical cost tracking & reporting (analytics)
-- **OpenAnchor:** Real-time cost interception & optimization (runtime)
+**Benchmarks to hit:**
+- DocIngest: 60-80% token reduction on PDFs
+- LazyMCP: 50-70% reduction on MCP overhead
+- ModelRouter: 60-75% on typical workloads
 
-**Integration:**
-- OpenAnchor's cost calculations feed into PyCostAudit's reporting
-- Users can track both: actual spend (PyCostAudit) + what-ifs (OpenAnchor)
-- Single Rust cost core shared between both
+**Output:** `openanchor-core` v0.1 on crates.io
 
 ---
 
-## Timeline
+### Week 2: SDKs + Model Discovery
+**Goal:** Python SDK + Model Intelligence engine
 
-**Week 1:**
-- [ ] Rust runtime skeleton
-- [ ] DocIngest module (PyMuPDF + Mistral OCR)
-- [ ] LazyMCP loader
-- [ ] Skeleton quality guardian
+**Tasks:**
 
-**Week 2:**
-- [ ] SkillLoader (external calling)
-- [ ] CostMeter UI (real-time attribution)
-- [ ] Python SDK
-- [ ] Regression testing on all optimizations
+**Python SDK:**
+- [ ] CostOptimizer wrapper class
+- [ ] LangChain integration (wrap any LLM)
+- [ ] Deep Agents integration
+- [ ] Stream support (no buffering overhead)
+- [ ] Environment variable interception
+- [ ] Cost meter reporting
+- [ ] Configuration system
 
-**Week 3:**
-- [ ] Documentation & examples
-- [ ] Node.js SDK
-- [ ] GitHub Actions CI/CD
-- [ ] PyPI release
+**Model Intelligence Engine:**
+- [ ] Daily pricing crawler (20+ cloud providers)
+- [ ] ProviderRouter (multi-provider LLM selection)
+- [ ] Open-source API tracker (Llama 70B across Groq/DeepInfra/Together/etc)
+- [ ] Task-pattern benchmarking (auto-test new models on user's tasks)
+- [ ] Recommendation engine ("Save $X/month by switching to Model Y")
+- [ ] One-click model switch with regression testing
+- [ ] Price change alerts
 
-**Week 4:**
-- [ ] Cloud model discovery (pricing tracker)
-- [ ] v0.2 features (context compression, model routing)
-- [ ] Community feedback & iteration
-- [ ] Marketing/launch
+**Node.js SDK:**
+- [ ] Parallel to Python SDK, same API
+- [ ] Publish to npm as `@openanchor/core`
+
+**Output:**
+- `openanchor` v0.1 on PyPI
+- `@openanchor/core` v0.1 on npm
+- Model discovery live and tracking 30+ models across 20+ providers
+
+---
+
+### Week 3: Advanced Optimizations + Enterprise
+**Goal:** All 9 optimizations + enterprise features
+
+**Tasks:**
+
+**Advanced Optimizations:**
+- [ ] ContextCompressor (rolling summarization)
+- [ ] OutputCompressor (semantic extraction)
+- [ ] Caveman (output token reduction)
+- [ ] ResponseCache (semantic caching)
+
+**Enterprise:**
+- [ ] Cost dashboard (team analytics, cost breakdown)
+- [ ] RBAC (team management)
+- [ ] Audit logs (7-year retention)
+- [ ] Webhooks (Slack, BigQuery, Datadog)
+- [ ] SSO/SAML (for enterprise)
+- [ ] Compliance docs (SOC2, GDPR, HIPAA)
+
+**Documentation:**
+- [ ] Installation guides (Python, Node, Rust)
+- [ ] Integration examples (LangChain, Deep Agents, custom)
+- [ ] Cost meter deep-dive
+- [ ] Model discovery guide
+- [ ] Enterprise setup guide
+
+**Benchmarks & Launch:**
+- [ ] Prove 60% average cost reduction
+- [ ] Quality regression testing (<5% threshold)
+- [ ] Deployment guide
+- [ ] GitHub launch
+- [ ] PyPI/npm release
+
+**Output:** `openanchor` v0.1 stable release
+
+---
+
+## Success Metrics (v0.1)
+
+### Cost Reduction
+- ✅ Average user saves 60% on typical workloads
+- ✅ 100% accuracy on cost calculation (matches actual bills)
+- ✅ Zero regressions shipped (<95% quality = disabled)
+
+### Adoption
+- ✅ 1K+ downloads (PyPI + npm) month 1
+- ✅ 200+ GitHub stars
+- ✅ 50+ integration examples in documentation
+
+### Model Discovery
+- ✅ 50%+ of users discover cheaper models/providers within month 1
+- ✅ Daily pricing crawler tracks 30+ models across 20+ providers
+- ✅ Price change detection <4 hours latency
+
+### Enterprise
+- ✅ First 5 enterprise customers on-boarded
+- ✅ SOC2 audit scheduled
+- ✅ HIPAA compliance documented
+
+---
+
+## v0.2 Roadmap (Post-Launch)
+
+- Advanced RouteLLM router (preference-data-trained)
+- Memory compression (46% input reduction for long sessions)
+- Image auto-resize (40-60% token reduction)
+- Dynamic system prompt assembly
+- Advanced caching strategies
+- Custom optimizer builder (let users add their own)
+- Integration with Cursor plugin API (if available)
+- Hermes Agent integration
+- Custom agent framework examples
+
+---
+
+## Positioning for Launch
+
+**Core Message:**
+> Add OpenAnchor to your agent. Same workflow. 60% cheaper.
+
+**For LangChain users:**
+> "Use LangChain as your orchestration. Add OpenAnchor as your cost layer. 60% savings on top of everything else."
+
+**For Cursor users:**
+> "Use Cursor as your IDE. Add OpenAnchor to optimize Cursor's agents. 60% cheaper."
+
+**For Claude Code users:**
+> "Use Claude Code as your agent runtime. Wrap it with OpenAnchor. 60% cheaper."
+
+**For enterprises:**
+> "We pay for ourselves in 2 weeks. Reduce your $50K/month LLM spend to $18K/month. No code changes."
+
+---
+
+## Technical Decisions
+
+**Why no frontend?**
+- Cursor dominates with $2.6B ARR
+- You can't out-UI Cursor
+- Your edge is cost optimization (Cursor has zero)
+- Middleware approach requires zero learning curve
+
+**Why SDKs over framework?**
+- Users already have chosen frameworks
+- SDK integration is 3 lines of code
+- No framework switching friction
+- Works with Cursor, Claude Code, Codex, LangChain, Deep Agents, etc.
+
+**Why Rust core?**
+- Cost interception latency critical
+- FFI to Python/Node for SDK layers
+- Streaming support without buffering
+- Reuse PyCostAudit's cost calculation
+
+**Why multi-provider support?**
+- LLM market has 625x price variance
+- Users locked into first provider choice
+- Your job: help them discover cheaper alternatives
+- Daily pricing tracking catches drops in real-time
+
+---
+
+## Risks & Mitigations
+
+**Risk:** SDKs are harder to use than a web UI
+**Mitigation:** 3-line integration. LangChain example. Deep Agents example. Environment variable fallback.
+
+**Risk:** Pricing crawler becomes a maintenance burden
+**Mitigation:** Crawl only publicly available pricing. Cache aggressively. Alert on failures.
+
+**Risk:** Some optimizations degrade quality
+**Mitigation:** A/B test all optimizations. Auto-disable if <95% quality. Full transparency.
+
+**Risk:** Users don't trust automatic model/provider switching
+**Mitigation:** Always show regression test results. Automatic fallback if quality <95%. Manual approval option.
+
+---
+
+## Ready to Build?
+
+**Week 0 starts immediately:**
+1. Rewrite PyCostAudit as PyCostAudit-Multi (multi-API)
+2. Set up Rust project skeleton
+3. Start task classifier + spike detector
+4. Integrate pricing from PyCostAudit
+
+**Week 1:** Core optimizations (DocIngest, LazyMCP, SkillLoader)
+**Week 2:** SDKs + Model Intelligence
+**Week 3:** Advanced features + launch
+
+**Total: 3 weeks to v0.1 stable release**
+
+---
+
+**OpenAnchor: Cost-optimization middleware. Framework-agnostic. Open-source. Ready.**
