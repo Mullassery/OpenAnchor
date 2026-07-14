@@ -248,6 +248,54 @@ Python SDK auto-patches all LLM imports on load.
 
 ---
 
+## Dependencies & Architecture
+
+### What OpenAnchor **Owns**
+- ✅ Request/response interception (Rust core)
+- ✅ Optimization orchestration (task classification, spike detection)
+- ✅ Quality A/B testing framework
+- ✅ SDK wrappers (Python, Node.js, Rust, HTTP API)
+- ✅ LangChain integration examples
+
+### What OpenAnchor **References** (No Code Duplication)
+
+**PyCostAudit-Multi** (cost calculation):
+- Uses PyCostAudit's Rust cost core for accurate token/cost tracking
+- Leverages multi-API support (20+ cloud providers, 10+ open-source APIs)
+- Dependency: `from pycostaudit_multi import CostCalculator`
+
+**Pyvectorhound** (quality validation, v0.2+):
+- Optional integration for advanced quality checks
+- Helps validate that optimizations don't degrade retrieval quality
+- Dependency: `from pyvectorhound import RAGDiagnostics` (if used)
+
+**Optional Integrations** (v0.2+):
+- StatGuardian (data quality monitoring)
+- StreamXL (Excel data ingestion)
+- Others as they make sense
+
+### Architecture: Referencing vs Copying
+
+```
+OpenAnchor (Middleware)
+├─ Rust Core (request/response interception)
+│  └─ Calls PyCostAudit's Rust core for cost calculation
+├─ Python SDK
+│  ├─ Wraps any LLM
+│  ├─ Calls PyCostAudit-Multi for cost tracking
+│  └─ Optionally calls Pyvectorhound for quality validation
+└─ Optimizations
+   ├─ DocIngest (owned)
+   ├─ LazyMCP (owned)
+   ├─ SkillLoader (owned)
+   ├─ ContextCompressor (owned)
+   └─ Caveman (owned)
+```
+
+**No code duplication. Clean separation of concerns. Easy to maintain and update.**
+
+---
+
 ## Market Opportunity
 
 **Real TAM: $50-100M** (honest assessment)
@@ -432,14 +480,31 @@ Cursor ($2.6B ARR, $60B backing, 500K+ paid users) will eventually add cost opti
 
 Not a billion-dollar platform. Not a Cursor competitor. Not a replacement for LangChain.
 
-**It's a Python library that wraps your LLM, optimizes requests, tracks costs, and shows you what was saved.**
+**It's a Python library that wraps your LLM, optimizes requests, and tracks costs using PyCostAudit-Multi.**
 
-**Week 1-2:** Ship core product (15-30% average savings, 5 optimizations, cost meter)
-**Week 2:** Launch to PyPI + PyCostAudit users
-**Month 1+:** Grow adoption, prove ROI, iterate based on real user feedback
-**Month 6+:** Add paid tier, team features, enterprise capabilities
-**Month 12+:** Cursor adds native cost optimization; pivot to enterprise cost platform
+### What Makes It Work
+
+1. **Leverages PyCostAudit's cost calculation** (your existing, proven logic)
+2. **Adds request/response interception** (new, OpenAnchor-owned)
+3. **Applies 5 optimizations** (owned + referenced from your ecosystem)
+4. **Provides visibility** (cost meter + what was saved)
+
+### Timeline
+
+**Week 1-2:** Ship core product
+- Rust interception + 5 optimizers
+- Python SDK that references PyCostAudit-Multi
+- LangChain integration
+- PyPI launch
+
+**Week 2:** Launch to PyPI + PyCostAudit users (your existing audience)
+
+**Month 1+:** Grow adoption, prove ROI (15-30% savings validation)
+
+**Month 6+:** Add paid tier, team features, optional Pyvectorhound integration
+
+**Month 12+:** Cursor adds cost optimization; pivot to enterprise cost platform
 
 ---
 
-**The product is done. It's simple. It's real. Ship it.**
+**The product is done. It's simple. It leverages your existing work. Ship it.**
