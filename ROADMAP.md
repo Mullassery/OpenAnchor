@@ -1,9 +1,10 @@
 # OpenAnchor Implementation Roadmap
 
-**Goal:** Build a middleware-based token intelligence platform that intercepts LLM calls, analyzes token consumption, stores data, and provides optimization recommendations.
+**Goal:** Build a middleware-based token intelligence platform that intercepts LLM calls, works with PyTokenCalc for token counting, and provides optimization recommendations.
 
 **Timeline:** v0.1 (Week 1-2) → v1.0 (Week 16)  
-**Architecture:** Middleware-first (like Helicone) but token-intelligence focused  
+**Architecture:** Middleware-first (like Helicone) but token-intelligence focused; requires PyTokenCalc  
+**Dependencies:** PyTokenCalc v0.8+ (bundled automatically)  
 **Target:** RAG and agent system developers
 
 ---
@@ -19,7 +20,7 @@
 - ✅ Raw API proxy support
 - ✅ Request/response capture (tokens + latency)
 - ✅ Basic prompt categorization
-- ✅ ClickHouse database setup and storage
+- ✅ Enrich PyTokenCalc's database with enrichment tables
 - ✅ Basic query APIs (Python)
 - ✅ Simple OTEL metrics export
 - ✅ Documentation + examples
@@ -30,7 +31,7 @@
 ```python
 # LangChain integration
 from openanchor.integrations.langchain import OpenAnchorMiddleware
-chain = my_chain | OpenAnchorMiddleware(database="clickhouse://localhost")
+chain = my_chain | OpenAnchorMiddleware(database_url="your-db-connection")
 
 # LlamaIndex integration
 from openanchor.integrations.llamaindex import OpenAnchorCallback
@@ -62,7 +63,7 @@ response = proxy.call(model="gpt-4", messages=[...])
 
 **Basic Queries:**
 ```python
-analyzer = OpenAnchorClient(database="clickhouse://localhost")
+analyzer = OpenAnchorClient(database_url="your-db-connection")
 
 # Total tokens by session
 stats = analyzer.get_session_stats(session_id="session_123")
@@ -89,11 +90,11 @@ latencies = analyzer.get_latency_stats()
    - Categories: code, reasoning, retrieval, creative, analysis, etc
    - Simple rules (prompt length, keywords, structure)
 
-3. **Database setup**
-   - ClickHouse schema design
-   - Event storage
+3. **Enrichment table setup**
+   - Define OpenAnchor enrichment table schemas
+   - Integrate with PyTokenCalc's database
    - Data indexing for queries
-   - Compression for efficiency
+   - Efficient storage of analysis results
 
 4. **Query APIs**
    - Session statistics
