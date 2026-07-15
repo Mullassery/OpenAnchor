@@ -490,7 +490,7 @@ A: No. Grafana/Datadog provide visualization. Export via OTEL.
 ## Local Development Setup
 
 ```bash
-# Start ClickHouse locally
+# Start database (PyTokenCalc will initialize schema)
 docker-compose -f docker/dev-compose.yml up -d
 
 # Install dependencies
@@ -502,9 +502,8 @@ pytest tests/ --cov=openanchor
 # Run example
 python examples/langchain_example.py
 
-# Check schema
-docker exec clickhouse clickhouse-client \
-  -q "SHOW TABLES FROM openanchor"
+# Check database tables
+# (commands depend on database type; see docker-compose.yml)
 ```
 
 ---
