@@ -1,365 +1,434 @@
 # OpenAnchor — Vision & Scope
 
-**OpenAnchor is the Token Consumption Intelligence Platform.**
+**OpenAnchor is an analysis and enrichment layer for token intelligence.**
 
-OpenAnchor consumes token counts produced by PyTokenCalc and transforms them into operational intelligence: attribution, pattern detection, trend analysis, and actionable optimization recommendations.
+It intercepts LLM calls, calls PyTokenCalc for accurate token counting, and enriches PyTokenCalc's database with intelligent analysis: token attribution, pattern detection, and optimization recommendations.
 
-**Relationship:** OpenAnchor sits ON TOP of PyTokenCalc (strict dependency hierarchy).
+**Critical:** OpenAnchor does NOT manage its own database. It reads from and writes enrichments to PyTokenCalc's database. It's purely an analysis layer, not a storage platform.
+
+**Like Helicone but different:** Where Helicone focuses on cost tracking and caching, OpenAnchor focuses on **token intelligence and optimization** for RAG and agent systems. Unlike Helicone (which is standalone), OpenAnchor requires PyTokenCalc.
 
 ---
 
 ## Core Mission
 
-OpenAnchor solves the intelligence problem in multi-LLM development:
+OpenAnchor solves the observability and optimization problem for developers building token-conscious LLM systems:
 
-> **Teams track token consumption but don't understand it: Why did costs spike? Where are tokens actually spent? What should we do about it?**
+> **Teams see total tokens consumed but don't understand them: Where did tokens come from? What patterns emerge? How do we optimize effectively?**
 
-### Division of Responsibility
+### Architecture Pattern
 
-| Question | Answered By |
-|----------|-------------|
-| "How many tokens were used?" | PyTokenCalc (token counting) |
-| "How many tokens by modality (text/image)?" | PyTokenCalc (breakdown) |
-| "Why were those tokens used?" | **OpenAnchor (attribution)** |
-| "What changed?" | **OpenAnchor (pattern detection)** |
-| "What's the trend?" | **OpenAnchor (trend analysis)** |
-| "What should we do?" | **OpenAnchor (recommendations)** |
-
----
-
-## What We Solve
-
-### Problem 1: Invisible Token Consumption
-- Teams see "$47/day" but don't know where it's spent
-- Is it long conversations? PDFs? Too many tools? Wrong model?
-- Cost spikes happen; root causes remain unknown
-
-### Problem 2: No Attribution
-- Token counts are aggregate numbers, not actionable
-- Can't trace tokens to: system prompts, context, retrieval, MCP calls
-- No way to know which optimization matters most
-
-### Problem 3: Undetected Patterns
-- Context inflation happens gradually (users don't notice)
-- Retrieval quality degrades (not measured)
-- Token growth correlates with issues (but invisible)
-
-### Problem 4: Manual Optimization
-- Finding optimization opportunities requires manual analysis
-- Users don't know: should we compress memory? Improve retrieval? Switch models?
-- Decisions are guesswork, not data-driven
-
----
-
-## What OpenAnchor Provides
-
-### 1. Complete Visibility
-Attribute token consumption to:
-- ✅ System prompts
-- ✅ User input
-- ✅ Conversation history
-- ✅ Retrieval context (RAG)
-- ✅ MCP server calls
-- ✅ Tool execution results
-- ✅ Image/audio encoding
-- ✅ Agent memory systems
-- ✅ Model context overhead
-
-**Result:** Teams know exactly where every token is spent.
-
-### 2. Pattern Detection
-Automatically detect:
-- ✅ Token growth trends (over time)
-- ✅ Prompt drift (user inputs changing)
-- ✅ Context inflation (history growing)
-- ✅ Retrieval inefficiency (fetch count increasing)
-- ✅ MCP expansion (more server calls)
-- ✅ Model behavior changes (same input, different cost)
-
-**Result:** Issues are caught before they become expensive.
-
-### 3. Optimization Intelligence
-Identify opportunities to:
-- ✅ Reduce unnecessary context
-- ✅ Improve retrieval efficiency
-- ✅ Compress conversation memory
-- ✅ Optimize MCP interactions
-- ✅ Switch to cheaper models (without quality loss)
-- ✅ Batch similar requests
-- ✅ Use prompt caching effectively
-
-**Result:** Concrete, prioritized optimization actions.
-
-### 4. Open Integration
-Integrate with:
-- ✅ Langfuse (observability)
-- ✅ OpenTelemetry (standard observability)
-- ✅ Grafana (dashboards)
-- ✅ Prometheus (metrics)
-- ✅ ClickHouse (data warehouse)
-- ✅ DuckDB (local analytics)
-- ✅ Snowflake (enterprise data lake)
-- ✅ Custom BI tools
-
-**Result:** Token intelligence flows into existing infrastructure.
-
----
-
-## What OpenAnchor IS
-
-✅ **An intelligence layer that:**
-- Consumes token accounting data from PyTokenCalc
-- Transforms events into observability signals
-- Attributes consumption to components
-- Detects patterns and anomalies
-- Recommends optimizations
-- Integrates with observability platforms
-
-✅ **Built on:**
-- PyTokenCalc: Token accounting (source of truth)
-- OpenTelemetry: Standard observability events
-- Open formats: Easy integration with any stack
-
-✅ **Design Philosophy:**
-- Observability-first (not optimization-first)
-- Attribution-focused (not aggregate)
-- Pattern-aware (not reactive)
-- Open-integration (not proprietary)
-
----
-
-## What OpenAnchor IS NOT
-
-### ✅ STRICTLY PyTokenCalc's Responsibility (Never OpenAnchor)
-❌ **NOT token counting** → PyTokenCalc does this
-  - Does not count tokens
-  - Does not manage tokenizers
-  - Does not integrate with APIs
-  - Does not cache token counts
-
-❌ **NOT cost calculation** → PyTokenCalc handles this
-  - Does not calculate costs from tokens
-  - Does not manage pricing data
-  - Does not track budgets
-
-### ✅ STRICTLY Separate Projects (Never OpenAnchor)
-❌ **NOT a middleware wrapper** → Frameworks handle execution
-  - Does not intercept LLM calls
-  - Does not wrap models
-  - Does not manage APIs
-
-❌ **NOT an optimization engine** → Separate service
-  - Does not automatically optimize
-  - Does not execute optimizations
-  - Does not modify behavior
-
-❌ **NOT a complete observability system** → Use platforms
-  - Does not provide dashboards (Grafana does)
-  - Does not store data (ClickHouse, etc do)
-  - Does not generate alerts (platforms do)
-
-### ✅ STRICTLY Integration Points (OpenAnchor Consumes, Doesn't Produce)
-❌ **NOT replacing:**
-- PyTokenCalc (we depend on it)
-- LangChain, LlamaIndex (we integrate with them)
-- Observability platforms (we feed data into them)
-- Model selection frameworks (we provide signals, not decisions)
-
----
-
-## Scope: IN vs OUT
-
-### STRICTLY IN-SCOPE
-- **Token attribution breakdown** (of total tokens from PyTokenCalc):
-  - System prompt contribution
-  - User input contribution
-  - Conversation history contribution
-  - Retrieval context contribution
-  - Model overhead contribution
-- Pattern detection (anomalies, trends, drift)
-- Observability signal generation
-- Integration with observability platforms
-- Optimization opportunity identification
-- Usage forecasting based on patterns
-- Governance policy enforcement
-- Multi-tenant data isolation
-
-### STRICTLY OUT-OF-SCOPE
-- Token counting (PyTokenCalc)
-- Cost calculation (PyTokenCalc)
-- Model selection (frameworks)
-- LLM API management (frameworks)
-- Automatic optimization execution
-- Model re-training
-- Custom metric computation
-- Data storage (use observability platforms)
-- Dashboard UI (use Grafana, etc.)
-
-### RELATED SEPARATE PROJECTS
-- **PyTokenCalc:** Token accounting foundation
-- **OpenObservability:** Dashboard UI for token visualization
-- **OpenOptimize:** Automatic cost optimization (separate service)
-- **ModelIntelligence:** Model selection and provider routing
-
----
-
-## Integration With PyTokenCalc
-
-### What OpenAnchor Consumes FROM PyTokenCalc
 ```
-PyTokenCalc Output (TOTAL Token Counts):
-├─ Total input tokens (exact number - no breakdown)
-├─ Total output tokens (exact number - no breakdown)
-├─ By modality (text tokens, image tokens - automatic breakdown)
-├─ Model name (specific model used)
-├─ Provider name (OpenAI, Anthropic, etc)
-└─ Metadata (timestamp, user_id, session_id, context data)
-
-NOTE: PyTokenCalc provides TOTALS ONLY
-      OpenAnchor breaks down TOTALS by component
-
-↓ OpenAnchor consumes these totals + context for attribution
+Your Application
+    ↓
+OpenAnchor Middleware (INTERCEPTS)
+├─ Captures incoming prompt
+├─ Proxies to LLM provider
+├─ Captures outgoing response
+├─ Calls PyTokenCalc for token counts
+├─ Categorizes prompt type
+└─ Stores enrichments in PyTokenCalc's database
+    ↓
+PyTokenCalc (Token Counting)
+├─ Provides accurate token counts
+├─ Handles provider switching
+└─ Reconciles via repeated API calls
+    ↓
+Shared Database (PyTokenCalc's database)
+├─ PyTokenCalc storage: token_events
+├─ OpenAnchor storage: attribution, patterns, recommendations
+├─ Query APIs (Python library)
+└─ OTEL Streaming (visualization)
+    ↓
+User's Application (gets insights)
 ```
 
-### What OpenAnchor Does NOT Do
-✅ Never counts tokens (PyTokenCalc does this)
-✅ Never calculates pricing (PyTokenCalc can do this)
-✅ Never manages APIs (PyTokenCalc manages tokenizer APIs)
-✅ Never caches token counts (PyTokenCalc handles caching)
+**Key Point:** OpenAnchor is purely analysis. PyTokenCalc owns storage. Both use the same database.
 
-### OpenAnchor Data Flow Example
-```
-User calls LLM with code review request
-   ↓
-LLM library (LangChain, etc)
-   ↓
-PyTokenCalc: "Count tokens for this request"
-   ↓
-PyTokenCalc Returns: {
-     input_tokens: 3200,
-     output_tokens: 450,
-     model: "claude-3-5-sonnet",
-     timestamp: "2026-07-15T10:00:00Z"
-   }
-   ↓
-OpenAnchor: "Analyze this token event"
-   ↓
-OpenAnchor Returns: {
-     attribution: {
-        system_prompt: 500,
-        user_code: 1200,
-        conversation_history: 1000,
-        model_overhead: 500
-     },
-     patterns: ["context_growing"],
-     recommendations: ["compress_history"]
-   }
+---
+
+## What OpenAnchor Does
+
+### 1. Middleware Interception
+
+OpenAnchor sits between your application and LLM providers, capturing:
+
+- **Incoming:** Full prompt, model, provider, metadata, timestamp
+- **Outgoing:** Full response, token counts, latency, quality metrics
+- **Latency:** Total time, time-to-first-token (TTFT), token generation rate
+
+```python
+# Your code just works; OpenAnchor intercepts automatically
+response = openai.ChatCompletion.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "..."}]
+)
+# OpenAnchor captured request + response in the background
 ```
 
-### Boundary: What Each Project Owns
+### 2. Intelligent Prompt Categorization
 
-**PyTokenCalc is responsible for:**
-✅ Token counting accuracy (99%+)
-✅ Supporting 20+ providers
-✅ Local + API tokenizers
-✅ Caching strategy
-✅ Exact token breakdown by modality
+Automatically categorizes prompts to understand usage patterns:
 
-**OpenAnchor is responsible for:**
-✅ Consuming token counts from PyTokenCalc
-✅ Attribution (who consumed tokens)
-✅ Pattern detection (what changed)
-✅ Trend analysis (is it growing?)
-✅ Recommendations (what to do)
+- Code review prompts
+- Summarization prompts
+- Classification prompts
+- Reasoning prompts
+- Retrieval-augmented prompts
+- Agent planning prompts
+- etc.
+
+**Why it matters:** Different prompt types have different token profiles. Understanding patterns helps optimization.
+
+### 3. Six-Dimensional Token Attribution
+
+Breaks down WHERE tokens went and WHY:
+
+```
+WHEN: Request (5000 tokens) vs Response (450 tokens)
+WHERE: Retrieval (1500) vs System prompt (500) vs User input (2000) vs Overhead (1000)
+HOW: Retrieval breakdown - top-5 documents vs semantic search overhead
+WHICH: Using "rag_analyzer_v2" prompt (vs v1: 6100 tokens)
+SESSION/PHASE: Phase 2 (analysis) of "project_q3" (600K tokens total)
+WHY: Retrieval growing 15%/week (pattern), recommendation: improve ranking
+```
+
+### 4. Pattern Detection & Analysis
+
+Automatically detects:
+- **Anomalies:** Token spikes (>2σ from baseline)
+- **Trends:** Token growth rates, seasonality
+- **Drift:** Prompt patterns changing
+- **Efficiency:** Which prompts/operations waste tokens
+- **Quality correlation:** Token spend vs quality achieved
+
+### 5. Actionable Recommendations
+
+Provides specific optimization opportunities:
+
+```
+Optimization: Improve retrieval ranking
+├─ Current: Fetching 12 documents per query
+├─ Problem: Only 3-4 are relevant (33% relevance)
+├─ Solution: Implement better ranking/filtering
+├─ Token impact: Reduce retrieval tokens from 1500 → 700 (47% savings)
+├─ Quality risk: Low (relevance stays same, just fewer irrelevant docs)
+└─ Implementation effort: Medium (2-3 days)
+```
+
+### 6. Analysis via Integrated Database
+
+All analysis data stored in PyTokenCalc's database (managed by bundled PyTokenCalc):
+
+```python
+from openanchor import OpenAnchor
+
+# pip install openanchor (automatically includes PyTokenCalc)
+
+# Single unified initialization
+openanchor = OpenAnchor(
+    database_url="your-database-connection"
+)
+# PyTokenCalc is bundled and initialized automatically
+
+# Query analysis across both token counts + OpenAnchor tables
+stats = openanchor.get_token_breakdown_by_prompt_type(
+    start_date="2026-07-01",
+    session_id="project_q3"
+)
+# Reads from PyTokenCalc's token_events + OpenAnchor's enrichment tables
+
+# Detect anomalies (using OpenAnchor's pattern_detections table)
+anomalies = openanchor.detect_anomalies(metric="tokens", threshold=2.0)
+# Returns: [{timestamp, prompt_type, tokens, baseline, deviation}]
+
+# Get recommendations (from OpenAnchor's recommendations table)
+recommendations = openanchor.get_recommendations()
+# Returns: [Optimization(...), ...]
+```
+
+**Deployment Model:** 
+- `pip install pytokencalc` — Token counting only (OpenAnchor optional)
+- `pip install openanchor` — Includes PyTokenCalc automatically + adds analysis layer
+- OpenAnchor REQUIRES PyTokenCalc; PyTokenCalc does NOT require OpenAnchor
+
+### 7. OTEL Streaming & Visualization
+
+Streams insights to observability platforms:
+
+```
+OpenAnchor → OTEL Metrics
+├─ token_consumption_total
+├─ token_latency_ms
+├─ prompt_category_distribution
+├─ anomaly_scores
+└─ optimization_signals
+    ↓
+Grafana / Datadog / Custom Dashboards
+```
+
+---
+
+## Who Should Use OpenAnchor
+
+### ✅ Perfect Fit
+
+- **RAG developers:** "I build retrieval-augmented systems; need to understand token efficiency"
+- **Agent builders:** "Multi-step agents; need to know which steps waste tokens"
+- **LangChain developers:** Already using LLM frameworks; need observability + intelligence
+- **Custom LLM apps:** Building specialized systems; need to understand and optimize token usage
+- **Production systems:** Running models at scale; need cost awareness and efficiency
+
+### ❌ Not the Right Tool
+
+- **Claude Code users:** Use PyTokenCalc (OpenAnchor requires middleware setup)
+- **Chat interfaces:** No application control (use Langfuse instead)
+- **Research/prototypes:** Overkill for non-production work
+- **Black-box services:** Can't intercept external APIs
+
+---
+
+## How OpenAnchor Differs from Alternatives
+
+| Feature | Helicone | Langfuse | LangSmith | OpenAnchor |
+|---------|----------|----------|-----------|-----------|
+| **Middleware interception** | ✅ | ❌ | ❌ | ✅ |
+| **Captures req + response** | ✅ | ✅ | ✅ | ✅ |
+| **Stores in database** | ✅ | ✅ | ✅ | ✅ |
+| **Query APIs** | ✅ | ✅ | ✅ | ✅ |
+| **Cost tracking** | ✅ (primary) | ✅ | ✅ | ❌ (token-focused) |
+| **Token attribution** | ❌ | ⚠️ (manual) | ❌ | ✅ (automatic, 6D) |
+| **Prompt categorization** | ⚠️ (basic) | ❌ | ❌ | ✅ (intelligent) |
+| **Pattern detection** | ❌ | ❌ | ❌ | ✅ |
+| **Recommendations** | ❌ | ❌ | ❌ | ✅ |
+| **OTEL streaming** | ⚠️ | ✅ | ❌ | ✅ |
+| **Active development** | ❌ (maintenance) | ✅ | ✅ | ✅ |
+
+**Why OpenAnchor?**
+- Helicone: In maintenance mode (acquired by Mintlify)
+- Langfuse: Great traces but requires manual attribution tagging
+- LangSmith: LangChain-specific, no attribution or recommendations
+- **OpenAnchor:** Active development, automatic token intelligence, RAG/agent optimized
+
+---
+
+## Key Design Decisions
+
+### 1. Middleware-First Architecture
+OpenAnchor intercepts LLM calls at the application level, not external proxy. This enables:
+- Deep visibility into requests AND responses
+- Accurate latency measurement
+- Direct integration with frameworks (LangChain, LlamaIndex, raw API)
+- Full control over data handling
+
+### 2. Token-First, Not Cost-First
+OpenAnchor focuses on **token understanding**, not cost tracking:
+- **Shows:** WHERE tokens came from (attribution)
+- **Doesn't:** Calculate costs (users multiply tokens × their pricing)
+- **Why:** Tokens are universal; costs are user-specific (Groq $0.59/M vs DeepInfra $0.23/M)
+- **Benefit:** Works with any pricing model, no pricing database maintenance
+
+### 3. Intelligent Prompt Analysis
+Automatically categorizes prompts to understand usage patterns:
+- Detects prompt intent (code, reasoning, retrieval, etc)
+- Tracks efficiency per category
+- Identifies over-engineered prompts
+- Recommends category-specific optimizations
+
+### 4. Database for Long-Term Analysis
+PyTokenCalc's database stores all events enabling:
+- Historical trend analysis
+- Cross-session pattern detection
+- Long-term efficiency tracking
+- Seasonal pattern discovery
+
+### 5. OTEL as Integration Standard
+Streams insights via OpenTelemetry so users can:
+- Visualize in Grafana, Datadog, custom dashboards
+- Set alerts in their existing monitoring
+- Build custom analysis pipelines
+- No vendor lock-in
+
+---
+
+## Success Metrics (v1.0)
+
+- ✅ **Accuracy:** 100% token counts vs PyTokenCalc/official counts
+- ✅ **Latency:** <5ms middleware overhead per call
+- ✅ **Database:** Stores 1M+ events efficiently
+- ✅ **Query performance:** <1s for complex queries
+- ✅ **Categorization:** 95%+ accuracy on prompt types
+- ✅ **Recommendations:** Actual 30%+ token savings when implemented
+- ✅ **Adoption:** Real-world RAG/agent systems using it
+
+---
+
+## Roadmap Overview
+
+### v0.1 (2 weeks): Middleware Foundation
+- Middleware interception (LangChain, LlamaIndex, raw API)
+- Token + latency capture
+- Basic prompt categorization
+- Database setup and storage
+- Basic query APIs
+- Simple OTEL export
+
+### v0.2 (3 weeks): Token Intelligence
+- 6-dimensional token attribution
+- Pattern detection (anomalies, trends)
+- Prompt efficiency ranking
+- Operation-type breakdown
+- Advanced query APIs
+
+### v0.3 (4 weeks): Optimization Engine
+- Detailed recommendations with token savings
+- Root cause analysis
+- Session/phase breakdown
+- A/B testing framework (preliminary)
+- Full OTEL integration
+
+### v0.4 (4 weeks): Advanced Features
+- Complete A/B testing framework
+- Gradual rollout support
+- Performance regression detection
+- Conditional routing recommendations
+- Advanced categorization
+
+### v1.0 (3 weeks): Production Ready
+- Multi-tenant support
+- Security features (encryption, RBAC, audit logs)
+- Performance optimization (<50ms queries)
+- Comprehensive documentation
+- Enterprise features
+
+**Total: 16 weeks** (realistic for this architecture)
+
+---
+
+## Architecture Highlights
+
+### Middleware Integration Points
+
+```python
+# LangChain
+from openanchor.integrations.langchain import OpenAnchorMiddleware
+chain = my_chain | OpenAnchorMiddleware()
+
+# LlamaIndex
+from openanchor.integrations.llamaindex import OpenAnchorCallback
+callback = OpenAnchorCallback()
+query_engine.run(query, callbacks=[callback])
+
+# Raw API
+from openanchor import OpenAnchorProxy
+proxy = OpenAnchorProxy(database_url="your-database-connection")
+response = proxy.call(model="gpt-4", messages=[...])
+```
+
+### Database Schema
+
+```sql
+CREATE TABLE token_events (
+  timestamp DateTime,
+  session_id String,
+  phase_id String,
+  
+  -- Request
+  prompt_raw String,
+  prompt_category String,
+  model String,
+  provider String,
+  
+  -- Response
+  response_raw String,
+  input_tokens UInt32,
+  output_tokens UInt32,
+  
+  -- Latency
+  total_latency_ms UInt32,
+  ttft_ms UInt32,
+  
+  -- Attribution
+  system_prompt_tokens UInt32,
+  user_input_tokens UInt32,
+  retrieval_context_tokens UInt32,
+  history_tokens UInt32,
+  overhead_tokens UInt32,
+  
+  -- Quality
+  quality_score Float32,
+  error_flag Boolean,
+  
+  -- Metadata
+  metadata String,  -- JSON
+  tags Array(String)
+) ENGINE = MergeTree()
+ORDER BY (timestamp, session_id)
+```
 
 ---
 
 ## Design Principles
 
-### 1. PyTokenCalc is Foundation (Strict)
-OpenAnchor depends on PyTokenCalc for all token accounting.
-We NEVER re-implement: tokenization, token counting, cost calculation, model APIs.
-PyTokenCalc is the single source of truth for token counts.
+### 1. Middleware-First
+Intercept at application level for deep visibility.
 
-### 2. Observability First
-OpenAnchor is an observability layer, not an optimization layer.
-We detect and report; users decide actions.
-Integration with platforms (Grafana, Langfuse) is primary.
+### 2. Token-Centric
+Focus on understanding token consumption, not cost calculation.
 
-### 3. Attribution Matters
-Aggregate token counts hide the story.
-Disaggregation by component reveals the reality.
-Every metric should answer: "What part of the system consumed this?"
+### 3. Automatic Intelligence
+No manual configuration; analyze automatically.
 
-### 4. Pattern Intelligence
-Raw counts are historical; patterns are predictive.
-Detect growth trends, drift, inflation before they become problems.
-Anomaly detection enables proactive management.
+### 4. Database-Backed
+Store everything for historical analysis and trends.
 
 ### 5. Open Integration
-No proprietary formats, no lock-in.
-Standard observability protocols (OpenTelemetry).
-Easy to export, integrate, visualize anywhere.
+Use OTEL, not proprietary formats; users choose visualization tools.
+
+### 6. RAG/Agent Optimized
+Built specifically for retrieval-augmented and multi-step agent systems.
 
 ---
 
-## Success Metrics
+## What OpenAnchor IS
 
-After v1.0:
-
-- **Visibility:** 100% of token consumption attributed to components
-- **Pattern detection:** Anomalies detected within 24h of occurrence
-- **Integration:** Seamless export to Grafana, Langfuse, OpenTelemetry
-- **Adoption:** Used by 50+ teams tracking token consumption
-- **Community:** Contributions for custom attribution models
-- **Accuracy:** 100% agreement with PyTokenCalc counts (verify)
+✅ A middleware platform that intercepts LLM calls  
+✅ Captures requests, responses, tokens, and latency  
+✅ Stores everything in a database for analysis  
+✅ Provides automatic token attribution (6 dimensions)  
+✅ Detects patterns and generates recommendations  
+✅ Streams insights via OTEL to visualization tools  
+✅ Enables query APIs for programmatic access  
+✅ Actively developed and optimized for RAG/agents  
 
 ---
 
-## Roadmap Summary
+## What OpenAnchor IS NOT
 
-### v0.1: Core Intelligence
-- Token event collection from PyTokenCalc
-- Basic attribution (system prompt, user input, context)
-- Simple trend detection
-- CSV export for analysis
-
-### v0.2: Pattern Detection
-- Anomaly detection (spikes, drift)
-- Conversation-level analysis
-- Model-specific tracking
-- Integration with Langfuse
-
-### v0.3: Advanced Integration
-- OpenTelemetry export
-- Grafana dashboard templates
-- Custom attribution rules
-- Optimization recommendations
-
-### v1.0: Enterprise Ready
-- Multi-tenant support
-- Advanced pattern learning
-- Governance policies
-- SLA/compliance reporting
+❌ A cost tracker (Helicone focus)  
+❌ A trace visualizer (Langfuse/LangSmith focus)  
+❌ A pricing database (user provides their pricing)  
+❌ Automatic optimizer (recommends; users implement)  
+❌ For end-user tools (requires app-level integration)  
 
 ---
 
 ## Long-Term Vision
 
-Become the operational intelligence layer for AI token consumption.
+Become the standard token intelligence layer for LLM applications.
 
 Just as:
-- **Prometheus** provides visibility into infrastructure metrics
-- **Datadog** provides operational intelligence for systems
+- **Prometheus** provides infrastructure metrics visibility
 - **Grafana** visualizes any observability data
 - **OpenTelemetry** standardizes observability signals
 
-**OpenAnchor** should provide visibility and intelligence for token consumption across AI systems.
+**OpenAnchor** should provide token consumption understanding for every team building with LLMs.
 
-The standard that every AI team uses to understand and optimize token efficiency.
+The go-to platform for understanding WHERE tokens go and HOW to optimize token efficiency.
 
 ---
 
 **Last Updated:** 2026-07-15  
 **Author:** Georgi Mammen Mullassery  
+**Status:** LOCKED (Ready for v0.1 implementation with correct architecture)  
 **License:** MIT

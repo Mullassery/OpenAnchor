@@ -1,14 +1,40 @@
 # CLAUDE.md — OpenAnchor Developer Guidelines
 
-**CRITICAL: Read VISION.md first. OpenAnchor is a token intelligence layer, not an optimization platform.**
+**READ FIRST:** [VISION.md](./VISION.md) (middleware observability platform) and [ROADMAP.md](./ROADMAP.md) (16-week implementation)
+
+**CORE ARCHITECTURE:** Middleware-based LLM observability (like Helicone), focused on token intelligence and optimization.
 
 ---
 
 ## Project Overview
 
-OpenAnchor is a Python library that consumes token accounting data from PyTokenCalc and provides observability, attribution, pattern detection, and optimization intelligence.
+OpenAnchor is a middleware platform that intercepts LLM calls (request + response), enriches data in PyTokenCalc's database, analyzes token consumption, and provides optimization recommendations.
 
-**Core dependency:** PyTokenCalc v0.8+ (token accounting foundation)
+**What it does:**
+- Intercepts both incoming prompts and outgoing responses
+- Records tokens, latency, and metadata
+- Stores everything in a database
+- Analyzes token attribution (6 dimensions)
+- Detects patterns automatically
+- Generates optimization recommendations
+- Streams insights via OTEL
+
+**What it does NOT:**
+- Manage its own database (uses bundled PyTokenCalc's database)
+- Create or initialize database (bundled PyTokenCalc does that)
+- Calculate costs (tokens only; users apply their pricing)
+- Automatically optimize code (recommends; users implement)
+- Visualize dashboards (OTEL exports to Grafana/Datadog)
+
+**Core dependency:** PyTokenCalc (bundled automatically with OpenAnchor, REQUIRED)
+
+**Deployment model:** 
+- `pip install openanchor` → Includes PyTokenCalc automatically as a dependency
+- PyTokenCalc handles database creation and token counting
+- OpenAnchor adds analysis tables to the same database
+- No separate PyTokenCalc installation or configuration needed
+- OpenAnchor cannot be used without PyTokenCalc
+- PyTokenCalc can be used alone without OpenAnchor
 
 ---
 
@@ -17,44 +43,64 @@ OpenAnchor is a Python library that consumes token accounting data from PyTokenC
 ```
 openanchor/
 ├── openanchor/
-│   ├── __init__.py                 # Public API
+│   ├── __init__.py                  # Public API
 │   ├── core/
-│   │   ├── events.py               # Token event types
-│   │   ├── collector.py            # Collect events from PyTokenCalc
-│   │   └── types.py                # Core type definitions
-│   ├── attribution/
+│   │   ├── middleware.py            # Abstract middleware interface
+│   │   ├── events.py                # Event/data types
+│   │   └── database.py              # Database client
+│   ├── middleware/
 │   │   ├── __init__.py
-│   │   ├── base.py                 # Attribution framework
-│   │   ├── system_prompt.py        # System prompt attribution
-│   │   ├── user_input.py           # User input attribution
-│   │   ├── context.py              # Context/history attribution
-│   │   └── retrieval.py            # RAG/retrieval attribution
-│   ├── patterns/
+│   │   ├── base.py                  # Base middleware class
+│   │   ├── langchain.py             # LangChain integration
+│   │   ├── llamaindex.py            # LlamaIndex integration
+│   │   └── proxy.py                 # Raw API proxy mode
+│   ├── analysis/
 │   │   ├── __init__.py
-│   │   ├── detector.py             # Anomaly/pattern detection
-│   │   ├── trends.py               # Trend analysis
-│   │   └── drift.py                # Input drift detection
-│   ├── integration/
+│   │   ├── attribution.py           # 6D token attribution
+│   │   ├── patterns.py              # Pattern detection
+│   │   ├── anomalies.py             # Anomaly detection
+│   │   ├── trends.py                # Trend analysis
+│   │   ├── efficiency.py            # Prompt efficiency
+│   │   └── categorization.py        # Prompt categorization
+│   ├── recommendations/
 │   │   ├── __init__.py
-│   │   ├── otel.py                 # OpenTelemetry export
-│   │   ├── langfuse.py             # Langfuse integration
-│   │   └── prometheus.py           # Prometheus metrics
-│   └── utils/
+│   │   ├── engine.py                # Recommendation generation
+│   │   ├── detectors/               # Opportunity detectors
+│   │   └── estimators/              # Savings estimators
+│   ├── query/
+│   │   ├── __init__.py
+│   │   ├── client.py                # Database query client
+│   │   ├── builders.py              # Query builders
+│   │   └── results.py               # Result types
+│   ├── export/
+│   │   ├── __init__.py
+│   │   ├── otel.py                  # OTEL export
+│   │   ├── grafana.py               # Grafana templates
+│   │   └── json.py                  # JSON export
+│   └── storage/
 │       ├── __init__.py
-│       └── formatting.py           # Report generation
+│       ├── schema.py                # Table definitions (for PyTokenCalc's DB)
+│       └── migrations.py            # Create tables in PyTokenCalc's DB
 ├── tests/
-│   ├── test_collector.py
+│   ├── test_middleware.py
 │   ├── test_attribution.py
 │   ├── test_patterns.py
+│   ├── test_recommendations.py
+│   ├── test_query.py
 │   └── test_integration.py
 ├── examples/
-│   ├── basic_usage.py              # Quick start
-│   ├── with_langchain.py           # LangChain integration
-│   └── with_otel.py                # OpenTelemetry export
+│   ├── langchain_example.py
+│   ├── llamaindex_example.py
+│   ├── raw_proxy_example.py
+│   └── analysis_example.py
 ├── docs/
-│   ├── VISION.md                   # Product vision + scope
-│   ├── ROADMAP.md                  # Implementation roadmap
-│   └── API.md                      # API reference
+│   ├── VISION.md                    # Product vision
+│   ├── ROADMAP.md                   # Implementation plan
+│   ├── ARCHITECTURE.md              # Architecture overview
+│   └── API.md                       # API reference
+├── docker/
+│   ├── database.yml                 # Database setup
+│   └── dev-compose.yml              # Local dev environment
 ├── pyproject.toml
 ├── README.md
 ├── LICENSE
@@ -65,134 +111,281 @@ openanchor/
 
 ## Key Concepts
 
+### Middleware Architecture
+
+OpenAnchor sits between application and LLM provider, working WITH PyTokenCalc:
+
+```
+Application Code
+    ↓
+OpenAnchor Middleware (INTERCEPTS)
+    ├─ Capture incoming request
+    ├─ Proxy to LLM provider
+    ├─ Capture outgoing response
+    ├─ Call PyTokenCalc for accurate counts
+    └─ Store enrichments in PyTokenCalc's DB
+    ↓
+PyTokenCalc (Token Accounting)
+    ├─ Count tokens (via API, cache, or reconciliation)
+    ├─ Store raw token_events
+    └─ Provide counts to OpenAnchor
+    ↓
+Shared Database (PyTokenCalc's database)
+├─ PyTokenCalc Tables:
+│  └─ token_events (raw tokens, owned by PyTokenCalc)
+├─ OpenAnchor Tables (same database, owned by OpenAnchor):
+│  ├─ token_attribution
+│  ├─ pattern_detections
+│  ├─ recommendations
+│  └─ ... (enrichments)
+    ↓
+Query APIs (Python)
+    ├─ Direct database queries
+    ├─ Pattern analysis
+    └─ Recommendation queries
+    ↓
+OTEL Export (observability)
+    ├─ Metrics stream
+    └─ Visualization in Grafana/etc
+```
+
+**Key:** OpenAnchor does NOT manage the database. It reads from PyTokenCalc's tables and writes its own enrichment tables to the same database.
+
 ### Token Events
-Events emitted by PyTokenCalc when tokens are consumed:
+
+Each LLM call generates an event:
+
 ```python
-{
-    "timestamp": "2026-07-15T10:00:00Z",
-    "provider": "anthropic",
-    "model": "claude-3-5-sonnet",
-    "input_tokens": 1500,
-    "output_tokens": 300,
-    "context": {
-        "user_id": "user123",
-        "session_id": "sess456",
-        "task": "code_review"
-    }
+TokenEvent = {
+  timestamp: "2026-07-15T10:00:00Z",
+  request: {
+    prompt: str,
+    model: str,
+    provider: str,
+    metadata: dict
+  },
+  response: {
+    text: str,
+    input_tokens: int,
+    output_tokens: int,
+    latency_ms: int,
+    ttft_ms: int,
+    quality_score: float  # optional user feedback
+  }
 }
 ```
 
-### Attribution
-Breaking down consumption by component:
-- System prompt tokens (fixed)
-- User input tokens (variable)
-- Context/history tokens (growing)
-- Retrieval context tokens (RAG-specific)
-- Model overhead tokens (context window overhead)
+### 6-Dimensional Attribution
 
-### Pattern Detection
-Identifying trends and anomalies:
-- Token growth over time (correlation with incidents)
-- Input drift (users changing query patterns)
-- Context inflation (memory growing beyond expected)
-- Cost anomalies (unusual spikes)
+Breaking down WHERE tokens went:
 
-### Integration
-Exporting signals to observability platforms:
-- OpenTelemetry (standard format)
-- Langfuse (LLM-specific observability)
-- Prometheus (metrics)
-- CSV/JSON (raw data export)
+```
+WHEN: Request (5000) vs Response (450) phases
+WHERE: System (500), User (2000), Retrieval (1500), Overhead (1000)
+HOW: Retrieval detail - top-5 docs (800), search overhead (700)
+WHICH: Prompt "rag_analyzer_v2" (vs v1: 6100 tokens)
+SESSION/PHASE: "project_q3" phase 2 (600K total)
+WHY: Retrieval growing 15%/week; recommendation: improve ranking
+```
+
+### Prompt Categorization
+
+Automatically categorizes prompts:
+
+```
+Categories:
+- code_review: Analyzing code
+- summarization: Condensing text
+- classification: Categorizing content
+- reasoning: Complex reasoning
+- retrieval: RAG queries
+- creative: Creative writing
+- analysis: Data analysis
+- planning: Agent planning
+```
 
 ---
 
 ## Development Workflow
 
-### Add New Attribution Model
+### Add Middleware Integration
 
-1. Create file: `openanchor/attribution/your_model.py`
-2. Implement `AttributionModel` ABC:
-   ```python
-   from openanchor.attribution.base import AttributionModel
-   
-   class YourAttributionModel(AttributionModel):
-       def attribute(self, event: TokenEvent) -> AttributionBreakdown:
-           """Break down tokens by component."""
-           return AttributionBreakdown(
-               system_prompt=...,
-               user_input=...,
-               context=...,
-               other=...
-           )
-   ```
-3. Add tests in `tests/test_attribution.py`
-4. Document in `docs/API.md`
+```python
+# openanchor/middleware/your_framework.py
 
-### Add New Pattern Detector
+from openanchor.middleware.base import BaseMiddleware
 
-1. Create file: `openanchor/patterns/your_detector.py`
-2. Implement `PatternDetector` ABC:
-   ```python
-   from openanchor.patterns.detector import PatternDetector
-   
-   class YourDetector(PatternDetector):
-       def detect(self, events: List[TokenEvent]) -> List[Pattern]:
-           """Detect patterns in token consumption."""
-           return [Pattern(...), ...]
-   ```
-3. Add tests in `tests/test_patterns.py`
+class YourFrameworkMiddleware(BaseMiddleware):
+    def intercept_request(self, request):
+        """Intercept before LLM call."""
+        return {
+            "prompt": request.prompt,
+            "model": request.model,
+            "metadata": request.metadata
+        }
+    
+    def intercept_response(self, response):
+        """Intercept after LLM call."""
+        return {
+            "text": response.text,
+            "tokens": response.usage,
+            "latency_ms": response.latency
+        }
+```
 
-### Add New Integration
+### Add Pattern Detector
 
-1. Create file: `openanchor/integration/your_platform.py`
-2. Implement `Integration` ABC:
-   ```python
-   from openanchor.integration.base import Integration
-   
-   class YourPlatformIntegration(Integration):
-       def export(self, events: List[TokenEvent]) -> None:
-           """Export events to your platform."""
-           pass
-   ```
-3. Document in README
+```python
+# openanchor/analysis/patterns.py
+
+class CustomPatternDetector:
+    def detect(self, events: List[TokenEvent]) -> List[Pattern]:
+        """Detect specific pattern."""
+        patterns = []
+        
+        # Your detection logic
+        if condition(events):
+            patterns.append(Pattern(
+                type="custom_pattern",
+                description="What changed",
+                severity="high"
+            ))
+        
+        return patterns
+```
+
+### Add Query Helper
+
+```python
+# openanchor/query/builders.py
+
+class CustomQueryBuilder:
+    def get_tokens_for_category(self, category: str, start_date, end_date):
+        """Query tokens by prompt category."""
+        query = f"""
+        SELECT SUM(input_tokens + output_tokens) as total_tokens
+        FROM token_events
+        WHERE prompt_category = '{category}'
+          AND timestamp >= '{start_date}'
+          AND timestamp < '{end_date}'
+        """
+        return self.client.execute(query)
+```
 
 ---
 
 ## Testing Requirements
 
-### Unit Tests
-- All new functions must have unit tests
-- Minimum 80% coverage per module
-- Run with: `pytest tests/ --cov=openanchor`
+### Unit Tests (80%+ coverage per module)
+
+```python
+def test_middleware_captures_request():
+    """Middleware must capture incoming request."""
+    middleware = YourMiddleware()
+    request = create_test_request()
+    captured = middleware.intercept_request(request)
+    assert captured["prompt"] == request.prompt
+
+def test_attribution_sums_to_total():
+    """Attribution breakdown must sum to total tokens."""
+    event = create_test_event(total_tokens=1000)
+    attribution = attribute(event)
+    assert sum(attribution.values()) == 1000
+
+def test_anomaly_detection():
+    """Detect spikes >2σ from baseline."""
+    baseline = [1000] * 10
+    spike = 3000
+    assert detector.is_anomaly(spike, baseline)
+```
 
 ### Integration Tests
-- Test PyTokenCalc integration
-- Test with real observability platforms (optional)
-- Test error handling (corrupt data, network failures)
+
+- Middleware captures full request/response
+- Attribution breaks down tokens correctly
+- Database storage and retrieval
+- Query builders work correctly
+- OTEL export formats correctly
 
 ### Example Scripts
-- All major features should have runnable examples
-- Examples should be self-contained
-- Run with: `python examples/your_example.py`
+
+All major features should have runnable examples:
+
+```bash
+python examples/langchain_example.py
+python examples/llamaindex_example.py
+python examples/raw_proxy_example.py
+```
 
 ---
 
 ## Scope Discipline
 
 ### ✅ DO
+
+**Middleware & Interception:**
+- Improve middleware accuracy
+- Add framework integrations (FastAPI, aiohttp, etc)
+- Better latency measurement
+- Metadata extraction
+
+**Analysis:**
+- Add new pattern detectors
 - Improve attribution accuracy
-- Add pattern detectors for new anomalies
-- Integrate with new observability platforms
-- Enhance PyTokenCalc integration
-- Improve documentation and examples
+- Better categorization
+- New anomaly detection types
+
+**Recommendations:**
+- New optimization types
+- Better savings estimation
+- Priority ranking improvements
+
+**Query & Export:**
+- More query helpers
+- OTEL enhancements
+- Grafana template improvements
 
 ### ❌ DON'T
-- Re-implement tokenization (PyTokenCalc does this)
-- Build cost calculation (PyTokenCalc does this)
-- Create visualization UIs (Grafana, Langfuse do this)
-- Add optimization execution (separate project)
-- Add model selection logic (frameworks handle this)
-- Store historical data (use observability platforms)
+
+**Scope Boundaries (STRICT):**
+- ❌ Cost calculation (PyTokenCalc responsibility)
+- ❌ Automatic code optimization (user's responsibility)
+- ❌ Model selection (frameworks/users decide)
+- ❌ Dashboard/UI (Grafana, Datadog provide visualization)
+- ❌ Pricing database (maintenance burden, user-specific)
+- ❌ User authentication (identity providers)
+- ❌ Real-time alerting (alerting platforms)
+
+**Avoid:**
+- ❌ Re-implementing PyTokenCalc
+- ❌ Building visualization UI
+- ❌ Complex ML models (keep it simple)
+- ❌ Scope creep into optimization execution
+
+---
+
+## Architecture Constraints
+
+### Middleware Must Be Non-Invasive
+- <5ms overhead per call
+- Transparent to application
+- Works with any framework
+
+### Database Must Scale
+- Handle 1M+ events efficiently
+- Sub-second query latency
+- Good compression ratio
+
+### Attribution Must Be Accurate
+- 100% of tokens attributed
+- Breakdown adds to total
+- Verifiable against PyTokenCalc
+
+### Recommendations Must Be Actionable
+- Specific changes recommended
+- Token savings quantified
+- Risk/effort assessed
+- Confidence scored
 
 ---
 
@@ -202,78 +395,120 @@ Exporting signals to observability platforms:
 ```
 <type>: <description>
 
-<optional detailed explanation>
+<detailed explanation>
 
 Closes: <issue number if applicable>
 ```
 
 **Types:**
-- `feat:` New attribution model, pattern detector, or integration
-- `fix:` Bug fix in existing feature
-- `docs:` Documentation or README updates
-- `refactor:` Code reorganization without behavior change
-- `test:` Add or update tests
+- `feat:` New middleware integration, pattern detector, or query helper
+- `fix:` Bug fix
+- `docs:` Documentation updates
+- `refactor:` Code reorganization
+- `test:` Test additions
 - `perf:` Performance improvement
 
 **Examples:**
 ```
-feat: Add drift detection for user input changes
+feat: Add LlamaIndex middleware integration
 
-Detects when user input tokens increase >20% in 24h window,
-indicating potential query pattern shift.
+Enables automatic interception of LlamaIndex queries.
+Captures request/response with <3ms overhead.
 
 Closes: #42
 ```
 
 ```
-fix: Handle missing context in attribution breakdown
+feat: Implement token attribution breakdown
 
-Previously crashed if PyTokenCalc event missing context field.
-Now gracefully handles missing optional fields.
+6-dimensional breakdown: WHEN, WHERE, HOW, WHICH, SESSION, WHY.
+Algorithms for inferring system vs context vs user tokens.
+
+Closes: #15
 ```
 
 ---
 
 ## Before Making a PR
 
-- [ ] Read VISION.md (understand scope)
-- [ ] Run: `pytest tests/ --cov=openanchor` (must pass)
-- [ ] Run: `black openanchor/` (code formatting)
-- [ ] Run: `ruff check openanchor/` (linting)
-- [ ] Add tests for new functionality
-- [ ] Update docs if adding new feature
-- [ ] Update ROADMAP.md if changing priorities
-- [ ] Ensure commit message follows guidelines
+- [ ] Read VISION.md (understand purpose)
+- [ ] Read ROADMAP.md (understand phase)
+- [ ] Check scope against "Scope Discipline"
+- [ ] Run tests: `pytest tests/ --cov=openanchor` (80%+)
+- [ ] Code format: `black openanchor/`
+- [ ] Lint: `ruff check openanchor/`
+- [ ] Add tests for new feature
+- [ ] Update docs if needed
+- [ ] Test with real LLM calls (if applicable)
+- [ ] Follow commit guidelines
 
 ---
 
 ## Common Questions
 
-**Q: Should I add cost calculation to OpenAnchor?**  
-A: No. PyTokenCalc does this. Use PyTokenCalc's output.
+**Q: Should I add cost calculation?**  
+A: No. Show tokens; users apply their pricing. Costs are user-specific.
 
-**Q: Can I optimize token usage automatically?**  
-A: No. OpenAnchor detects opportunities; users/optimization services decide actions.
+**Q: Can I optimize code automatically?**  
+A: No. Recommend optimizations; users implement.
 
 **Q: What if PyTokenCalc is missing a model?**  
-A: Update PyTokenCalc in a separate PR, then use it here.
+A: Update PyTokenCalc in a separate PR, then use it.
 
-**Q: Should I add alerting/notifications?**  
-A: No. Export to OpenTelemetry; alerting platforms handle notifications.
+**Q: Can I add real-time alerting?**  
+A: No. Export via OTEL; alerting platforms handle notifications.
 
-**Q: Can I store historical token data?**  
-A: No. Use observability platforms (Grafana, ClickHouse) for storage.
+**Q: Should I support <LLM Provider X>?**  
+A: Yes! If PyTokenCalc supports it, add middleware integration.
+
+**Q: Can I build a dashboard?**  
+A: No. Grafana/Datadog provide visualization. Export via OTEL.
+
+---
+
+## Performance Targets
+
+- Middleware latency: <5ms per call
+- Event processing: <1ms
+- Query latency: <1s (even complex queries)
+- Attribution accuracy: 100%
+- Pattern detection: <5% false positive rate
+- Memory: <500MB for 1M events
 
 ---
 
 ## Resources
 
+- **Helicone (reference):** https://github.com/helicone/helicone
 - **PyTokenCalc:** https://github.com/Mullassery/pytokencalc
+- **ClickHouse:** https://clickhouse.com/
 - **OpenTelemetry:** https://opentelemetry.io/
-- **Langfuse:** https://langfuse.com/
 - **Grafana:** https://grafana.com/
 
 ---
 
+## Local Development Setup
+
+```bash
+# Start ClickHouse locally
+docker-compose -f docker/dev-compose.yml up -d
+
+# Install dependencies
+pip install -e ".[dev]"
+
+# Run tests
+pytest tests/ --cov=openanchor
+
+# Run example
+python examples/langchain_example.py
+
+# Check schema
+docker exec clickhouse clickhouse-client \
+  -q "SHOW TABLES FROM openanchor"
+```
+
+---
+
 **Last Updated:** 2026-07-15  
-**Maintainer:** Georgi Mammen Mullassery
+**Maintainer:** Georgi Mammen Mullassery  
+**Status:** v0.1 Alpha (middleware architecture)

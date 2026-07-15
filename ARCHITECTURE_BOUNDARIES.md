@@ -120,25 +120,84 @@
           │  └─ Output: Intelligence       │
           └──────────┬───────────────────────┘
                      │
-       ┌─────────────▼──────────────────────┐
-       │ Intelligence Signals Generated:   │
-       │ {                                  │
-       │   attribution: {                   │
-       │     system_prompt: 500,            │
-       │     user_code: 1200,               │
-       │     conversation: 1000,            │
-       │     overhead: 500                  │
-       │   },                               │
-       │   patterns: [                      │
-       │     "context_growing",             │
-       │     "spikes_after_noon"            │
-       │   ],                               │
-       │   recommendations: [               │
-       │     "compress_history",            │
-       │     "improve_retrieval"            │
-       │   ]                                │
-       │ }                                  │
-       └─────────────┬──────────────────────┘
+       ┌─────────────▼──────────────────────────────────────┐
+       │ Intelligence Enrichments Stored:                  │
+       │ (OpenAnchor writes 8+ tables to shared DB)        │
+       │                                                    │
+       │ 1. Token Attribution (6-Dimensional):             │
+       │    ├─ system_prompt: 500 tokens                   │
+       │    ├─ user_input: 1200 tokens                     │
+       │    ├─ retrieval_context: 1500 tokens              │
+       │    ├─ model_overhead: 0 tokens                    │
+       │    ├─ conversation_history: 0 tokens              │
+       │    └─ response_generation: 450 tokens             │
+       │                                                    │
+       │ 2. Prompt Intelligence:                           │
+       │    ├─ prompt_id: "abc123"                         │
+       │    ├─ prompt_category: "code_review"              │
+       │    ├─ prompt_version: "v2"                        │
+       │    ├─ prompt_complexity_score: 0.73               │
+       │    └─ expected_efficiency_baseline: 4500 tokens   │
+       │                                                    │
+       │ 3. Operational Breakdown (WHERE):                 │
+       │    ├─ pdf_extraction: 1200 tokens                 │
+       │    ├─ retrieval_search: 300 tokens                │
+       │    └─ mcp_overhead: 0 tokens                      │
+       │                                                    │
+       │ 4. Session & Phase Tracking:                      │
+       │    ├─ session_id: "project_q3"                    │
+       │    ├─ phase_id: "analysis_phase_2"                │
+       │    ├─ phase_token_budget: 600000 tokens           │
+       │    └─ phase_tokens_used: 452300 tokens            │
+       │                                                    │
+       │ 5. Quality Metrics:                               │
+       │    ├─ quality_score: 0.96                         │
+       │    ├─ latency_ttft_ms: 450                        │
+       │    ├─ token_generation_rate: 65 tok/s             │
+       │    └─ user_satisfaction: 0.92                     │
+       │                                                    │
+       │ 6. Pattern Detection:                             │
+       │    ├─ anomaly_flags: ["spike", "drift"]           │
+       │    ├─ anomaly_severity: 0.78                      │
+       │    ├─ trend_direction: "up"                       │
+       │    ├─ trend_growth_rate: "15%/week"               │
+       │    └─ detected_patterns: ["context_growing", ..] │
+       │                                                    │
+       │ 7. Efficiency Analysis:                           │
+       │    ├─ efficiency_score: 0.81                      │
+       │    ├─ efficiency_rank: 7 (vs similar prompts)     │
+       │    ├─ cost_per_quality_ratio: 0.045 $/quality     │
+       │    ├─ comparison_to_baseline: "-12% efficiency"   │
+       │    └─ improvement_opportunity_flag: true          │
+       │                                                    │
+       │ 8. Recommendations:                               │
+       │    ├─ recommended_action: "Improve retrieval"     │
+       │    ├─ token_savings_estimate: 600 tokens          │
+       │    ├─ confidence_score: 0.95                      │
+       │    ├─ implementation_difficulty: "medium"         │
+       │    └─ potential_quality_impact: "+2% quality"     │
+       │                                                    │
+       │ 9. Root Cause Analysis:                           │
+       │    ├─ root_cause_component: "retrieval_context"   │
+       │    ├─ root_cause_hypothesis: "12 docs fetched.."  │
+       │    ├─ supporting_evidence: [metrics]              │
+       │    └─ confidence_in_diagnosis: 0.88               │
+       │                                                    │
+       │ 10. Multi-Dimensional Context:                    │
+       │    ├─ operation_type: "retrieval"                 │
+       │    ├─ operation_subtype: "semantic_search"        │
+       │    ├─ correlation_with_quality: 0.73              │
+       │    ├─ correlation_with_latency: 0.82              │
+       │    └─ seasonal_patterns: [pattern data]           │
+       │                                                    │
+       │ 11. A/B Testing & Comparison:                     │
+       │    ├─ variant_id: "v2"                            │
+       │    ├─ control_vs_treatment: "treatment"           │
+       │    ├─ comparison_to_similar: "+8% efficiency"     │
+       │    ├─ statistical_significance: 0.96              │
+       │    └─ improvement_delta: 340 tokens               │
+       │                                                    │
+       └─────────────┬──────────────────────────────────────┘
                      │
        ┌─────────────▼──────────────────────┐
        │  3. Export to Platforms:           │
@@ -177,6 +236,369 @@
 ❌ Neither creates dashboards  
 ❌ Neither sends alerts  
 ❌ Neither makes final decisions  
+
+---
+
+## Integrated Deployment: OpenAnchor Uses PyTokenCalc's Database
+
+**CRITICAL ARCHITECTURAL TRUTH:** OpenAnchor does NOT have its own database. It is a pure **analysis and enrichment layer** that reads from and writes enrichments to **PyTokenCalc's database**.
+
+- **PyTokenCalc:** Middleware + Database (self-contained, works alone)
+- **OpenAnchor:** Middleware + Analysis (depends on PyTokenCalc's database)
+
+### Deployment Scenarios
+
+**Scenario 1: PyTokenCalc Only (Standalone)**
+```
+Your Application
+    ↓
+PyTokenCalc Middleware
+    ├─ Counts tokens (via API, local cache, or repeated calls)
+    ├─ Stores token events in its database
+    └─ Handles provider switching + reconciliation
+    ↓
+PyTokenCalc's Database (owned and maintained by PyTokenCalc)
+├─ token_events (raw data)
+│  ├─ timestamp, model, provider
+│  ├─ input_tokens, output_tokens
+│  ├─ latency, metadata
+│  └─ ... (PyTokenCalc owns this storage)
+```
+
+**Scenario 2: OpenAnchor + PyTokenCalc (Integrated)**
+```
+Your Application
+    ↓
+OpenAnchor Middleware
+    ├─ Intercepts request/response
+    ├─ Calls PyTokenCalc for accurate counts
+    └─ Stores enrichments in PyTokenCalc's database
+    ↓
+PyTokenCalc Middleware
+    ├─ Provides token counts
+    ├─ Stores raw events
+    └─ Handles reconciliation
+    ↓
+PyTokenCalc's Database (shared by both, managed by PyTokenCalc)
+├─ PyTokenCalc Storage (owned by PyTokenCalc):
+│  └─ token_events (raw token data)
+│
+└─ OpenAnchor Enrichments (owned by OpenAnchor, stored in same DB):
+   ├─ token_attribution (6D breakdown, references token_events)
+   ├─ prompt_catalog (categorization)
+   ├─ pattern_detections (anomalies, trends, drift)
+   ├─ recommendations (optimization opportunities)
+   ├─ quality_metrics (latency, user scores)
+   ├─ operation_breakdown (retrieval, reasoning, etc)
+   ├─ efficiency_scores (prompt rankings)
+   └─ root_cause_analysis (spike investigation)
+
+✅ PyTokenCalc owns storage and reconciliation
+✅ OpenAnchor owns analysis and enrichment
+✅ Single database instance (no duplication)
+✅ Rich integrated queries (join PyTokenCalc + OpenAnchor tables)
+✅ OpenAnchor is optional—PyTokenCalc works standalone
+```
+
+### Database Schema (Integrated)
+
+**PyTokenCalc Owns:**
+```
+token_events (table owned by PyTokenCalc):
+  id, timestamp, session_id, request_id,
+  model, provider, context_window, max_output,
+  input_tokens, output_tokens, by_modality,
+  latency_ms, ttft_ms, cost_base_rate,
+  metadata
+
+-- PyTokenCalc creates this table and owns the schema
+-- OpenAnchor ONLY reads from this table
+```
+
+**OpenAnchor Adds** (to the same database that PyTokenCalc maintains):
+```
+token_attribution (table created by OpenAnchor):
+  request_id, timestamp,
+  system_prompt_tokens, user_input_tokens,
+  retrieval_context_tokens, model_overhead_tokens,
+  response_generation_tokens,
+  attribution_confidence, attribution_method
+
+prompt_catalog (table created by OpenAnchor):
+  prompt_id, prompt_hash, first_seen,
+  prompt_category, prompt_complexity_score,
+  prompt_version, prompt_template_name
+
+pattern_detections (table created by OpenAnchor):
+  detection_id, timestamp, session_id,
+  pattern_type (anomaly/trend/drift/efficiency),
+  pattern_description, severity_level,
+  affected_component, supporting_metrics
+
+recommendations (table created by OpenAnchor):
+  recommendation_id, timestamp, session_id,
+  action_description, token_savings_estimate,
+  confidence_score, effort_level, priority_rank,
+  component_affected, implementation_notes
+
+quality_metrics (table created by OpenAnchor):
+  request_id, timestamp,
+  latency_ttft_ms, token_generation_rate,
+  user_satisfaction_score, quality_score,
+  correlation_with_tokens
+
+operation_breakdown (table created by OpenAnchor):
+  request_id, operation_type, operation_subtype,
+  operation_tokens, operation_duration_ms,
+  operation_success_flag, operation_result_tokens
+
+efficiency_scores (table created by OpenAnchor):
+  prompt_id, efficiency_rank, efficiency_score,
+  cost_per_quality_ratio, comparison_to_baseline,
+  improvement_opportunity_detected
+
+root_cause_analysis (table created by OpenAnchor):
+  anomaly_id, investigation_timestamp,
+  root_cause_component, root_cause_hypothesis,
+  supporting_evidence, confidence_in_diagnosis,
+  recommended_remediation
+
+-- OpenAnchor creates these tables in the SAME database as PyTokenCalc maintains
+-- All tables are in one database instance
+-- OpenAnchor READS from token_events (PyTokenCalc's table)
+-- OpenAnchor WRITES to its own enrichment tables
+```
+
+### Query Examples (Integrated View)
+
+**Example 1: Complete Call Analysis**
+```
+Query across PyTokenCalc (token_events) + OpenAnchor enrichment tables:
+  - Token counts from token_events
+  - Attribution breakdown from token_attribution
+  - Detected patterns from pattern_detections
+  - Recommendations from recommendations table
+  WHERE session_id = 'project_q3'
+```
+
+**Example 2: Session Breakdown (tokens + patterns + recommendations)**
+```
+Query:
+  - SUM(input_tokens + output_tokens) from token_events
+  - Count of calls
+  - AVG(retrieval_context_tokens) from token_attribution
+  - Distinct patterns detected
+  - Potential token savings from recommendations
+  GROUP BY session_id
+```
+
+**Example 3: Efficiency vs Quality**
+```
+Query:
+  - Prompt category from prompt_catalog
+  - Call count from token_events
+  - Average tokens (input + output)
+  - Average quality score from quality_metrics
+  - Efficiency rank and ratio from efficiency_scores
+  GROUP BY prompt_category
+```
+
+### Integration Points
+
+**PyTokenCalc writes:**
+- Raw token counts (accurate, provider-specific)
+- Metadata (model, provider, latency)
+- Session/call tracking
+
+**OpenAnchor reads from:**
+- token_events (PyTokenCalc data)
+- Enriches with 6-dimensional attribution
+- Analyzes patterns
+- Generates recommendations
+- Stores all in same database
+
+**Both query:**
+- Shared tables for analysis
+- No API calls between projects
+- Database is the integration point
+
+### Configuration
+
+**When deploying OpenAnchor (UNIFIED):**
+
+```python
+# Install: pip install openanchor
+# PyTokenCalc is automatically included as a dependency
+
+from openanchor import OpenAnchor
+
+# Single unified setup (specify database connection)
+openanchor = OpenAnchor(
+    database_url="your-database-connection-string"
+)
+
+# Behind the scenes:
+# 1. OpenAnchor initializes its bundled PyTokenCalc instance
+# 2. PyTokenCalc creates token_events storage in the database
+# 3. OpenAnchor creates its enrichment tables in the SAME database
+# 4. Middleware handles both interception AND token counting
+```
+
+**When deploying PyTokenCalc standalone (Without OpenAnchor):**
+
+```python
+# Install: pip install pytokencalc
+# Use PyTokenCalc alone (no OpenAnchor)
+
+from pytokencalc import PyTokenCalc
+
+pytokencalc = PyTokenCalc(
+    database_url="your-database-connection-string"
+)
+# Stores tokens, handles reconciliation via repeated API calls
+# No enrichment/analysis tables created
+```
+
+**Key Deployment Model:**
+- **pip install pytokencalc** → Standalone, works without OpenAnchor (OpenAnchor is OPTIONAL)
+- **pip install openanchor** → Automatically includes PyTokenCalc as a dependency (PyTokenCalc is REQUIRED)
+- Both use the same database (managed by PyTokenCalc)
+- OpenAnchor cannot be used without PyTokenCalc
+- PyTokenCalc can be used without OpenAnchor
+
+### Cost & Operational Implications
+
+| Aspect | PyTokenCalc Only | PyTokenCalc + OpenAnchor |
+|--------|------------------|--------------------------|
+| Database instances | 1 | 1 (same database) |
+| Storage (1M events) | ~500MB | ~1.5GB (token_events + enrichments) |
+| Query latency | <1s | <1s (both in same DB) |
+| Operational overhead | Minimal | Low (just added tables) |
+| Data sync complexity | None | None (co-located) |
+| Infrastructure cost | $X/month | $X/month (single instance, larger) |
+| OpenAnchor storage cost | N/A | Included in PyTokenCalc DB |
+
+**Key Point:** OpenAnchor does NOT increase operational complexity because it doesn't manage its own database. It adds tables to PyTokenCalc's database. The infrastructure cost is essentially the same, just slightly larger to hold enrichment tables.
+
+---
+
+## Provider Abstraction: Why PyTokenCalc Stays Separate
+
+**Critical Design Principle:** OpenAnchor COULD count tokens (it sees request + response), but it SHOULD NOT. Here's why.
+
+### The Real-World Problem
+
+Users change LLM providers **constantly and frequently**:
+
+```
+Timeline of a Real Application:
+
+Day 1:   Using Ollama locally
+         └─ Need Ollama tokenization
+
+Day 2:   Switching to AWS Bedrock
+         └─ Need Bedrock tokenization (different API, different counting)
+
+Day 3:   Switching to Claude official API
+         └─ Need Anthropic tokenization (yet another approach)
+
+Day 4:   Switching to GCP Vertex AI
+         └─ Need Google tokenization (completely different)
+
+Week 2:  Switching to Groq for speed
+         └─ Need Groq tokenization
+
+Month 1: Multi-provider routing (use best provider for each task)
+         └─ Need abstraction across multiple providers
+```
+
+### Why PyTokenCalc Must Handle All Tokenization
+
+**If OpenAnchor also counted tokens:**
+
+❌ Would duplicate token counting logic with PyTokenCalc  
+❌ Would need to implement tokenization for Ollama, AWS, Claude, GCP, Groq, etc.  
+❌ Every new provider requires updates in TWO places  
+❌ Every bug fix must be done in TWO places  
+❌ Users changing providers must update BOTH PyTokenCalc AND OpenAnchor  
+❌ Maintenance nightmare  
+
+**With PyTokenCalc as the abstraction layer:**
+
+✅ PyTokenCalc: "Handle tokenization for all providers (Ollama, AWS, Claude, GCP, Groq, etc)"  
+✅ OpenAnchor: "Just use PyTokenCalc for accurate counts, I focus on analysis"  
+✅ Users change providers: update PyTokenCalc reference (ONE place)  
+✅ OpenAnchor works unchanged with any provider  
+✅ Clean separation, no duplication  
+
+### Example: Provider Switch Scenario
+
+**Scenario 1: OpenAnchor counts tokens (WRONG)**
+
+```python
+# User switches from Ollama to AWS Bedrock
+# Day 1 (Ollama):
+class OllamaTokenCounter:
+    def count(self, prompt):
+        # Ollama-specific counting
+
+# Day 2 (Switch to AWS):
+❌ Must rewrite PyTokenCalc to handle Bedrock
+❌ Must rewrite OpenAnchor to handle Bedrock tokenization
+❌ Two codebases to update
+❌ High chance of mismatches
+```
+
+**Scenario 2: PyTokenCalc abstracts tokens (CORRECT)**
+
+```python
+# User switches from Ollama to AWS Bedrock
+# Day 1 (Ollama):
+tokens = PyTokenCalc.count_tokens(
+    model="ollama:llama2",
+    prompt="...",
+    provider="ollama"
+)
+
+# Day 2 (Switch to AWS):
+tokens = PyTokenCalc.count_tokens(
+    model="claude-3-sonnet",
+    prompt="...",
+    provider="bedrock"
+)
+
+# OpenAnchor UNCHANGED:
+analysis = OpenAnchor.analyze(tokens)
+# Still works perfectly, no changes needed
+```
+
+### What This Means
+
+**PyTokenCalc is the provider abstraction layer:**
+- Centralized place for "how to count tokens in provider X"
+- Users can swap providers without touching OpenAnchor
+- Single source of truth for token counting
+
+**OpenAnchor focuses on insights:**
+- Latency analysis (how fast was the request?)
+- Token attribution (where did tokens go?)
+- Pattern detection (what changed?)
+- Recommendations (what to optimize?)
+
+**Separation allows flexibility:**
+- Switch providers → update PyTokenCalc config
+- Improve analysis → update OpenAnchor logic
+- Two concerns, two projects, no duplication
+
+### Why This Matters
+
+From **PyCostAudit failure** → learning:
+- Original PyCostAudit tried to do everything (counting + analysis + cost)
+- Failed because cost analysis requires attribution (can't do everywhere)
+- Split into:
+  - **PyTokenCalc:** Universal token counting abstraction
+  - **OpenAnchor:** Specialized token intelligence (requires visibility)
+- Keep them separate to avoid provider lock-in and duplication
 
 ---
 
