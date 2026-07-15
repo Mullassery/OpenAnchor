@@ -11,6 +11,39 @@ Like Helicone but focused on token INTELLIGENCE instead of cost tracking. Like L
 
 ---
 
+## Installation
+
+### For Users
+
+```bash
+pip install openanchor
+```
+
+### For Developers
+
+```bash
+# Clone the repository
+git clone https://github.com/Mullassery/openanchor.git
+cd openanchor
+
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install in development mode with dev dependencies
+pip install -e ".[dev]"
+
+# Run tests
+pytest tests/
+```
+
+**Requirements:**
+- Python 3.9+
+- PyTokenCalc 0.8+
+- pip or uv
+
+---
+
 ## What It Does
 
 **Intercepts.** Sits between your application and LLM providers, capturing every call.
