@@ -305,14 +305,6 @@ efficiency = analyzer.rank_prompts_by_efficiency()
 
 ---
 
-## Documentation
-
-- **[VISION.md](./VISION.md)** — Product vision and architecture
-- **[ROADMAP.md](./ROADMAP.md)** — 16-week implementation plan
-- **[CLAUDE.md](./CLAUDE.md)** — Developer guidelines
-
----
-
 ## Key Principles
 
 1. **Middleware-First:** Intercept at application level for visibility
