@@ -271,7 +271,7 @@ Python SDK auto-patches all LLM imports on load.
 
 **Optional Integrations** (v0.2+):
 - StatGuardian (data quality monitoring)
-- StreamXL (Excel data ingestion)
+- PyStreamXL (Excel data ingestion)
 - Others as they make sense
 
 ### Architecture: Referencing vs Copying
