@@ -6,8 +6,6 @@
 
 **OpenAnchor is a token intelligence analysis layer that intercepts LLM calls, works with PyTokenCalc for accurate counts, and provides optimization insights.**
 
-Like Helicone but focused on token INTELLIGENCE instead of cost tracking. Like Langfuse but with automatic token attribution and pattern detection. 
-
 **Dependency:** OpenAnchor REQUIRES PyTokenCalc. Install `pip install openanchor` and PyTokenCalc is automatically included. PyTokenCalc can be used standalone without OpenAnchor.
 
 ---
@@ -318,27 +316,6 @@ efficiency = analyzer.rank_prompts_by_efficiency()
 
 ---
 
-## Comparison with Alternatives
-
-| Feature | Helicone | Langfuse | LangSmith | OpenAnchor |
-|---------|----------|----------|-----------|-----------|
-| **Middleware** | ✅ | ❌ | ❌ | ✅ |
-| **Captures req+resp** | ✅ | ✅ | ✅ | ✅ |
-| **Database** | ✅ | ✅ | ✅ | ✅ |
-| **Token attribution** | ❌ | ⚠️ (manual) | ❌ | ✅ (automatic, 6D) |
-| **Pattern detection** | ❌ | ❌ | ❌ | ✅ |
-| **Recommendations** | ❌ | ❌ | ❌ | ✅ |
-| **Cost focus** | ✅ (primary) | ✅ | ✅ | ❌ (token-focused) |
-| **Active dev** | ❌ (maintenance) | ✅ | ✅ | ✅ |
-
-**Why OpenAnchor?**
-- Helicone in maintenance mode (acquired by Mintlify)
-- Langfuse great for traces but requires manual attribution
-- LangSmith LangChain-specific, no recommendation engine
-- **OpenAnchor:** Automatic token intelligence + active development
-
----
-
 ## Key Principles
 
 1. **Middleware-First:** Intercept at application level for visibility
@@ -413,8 +390,6 @@ MIT License — see [LICENSE](./LICENSE)
 ---
 
 ## Acknowledgments
-
-Built on patterns from [Helicone](https://github.com/helicone/helicone).
 
 Uses PyTokenCalc's database for analytics storage.
 
