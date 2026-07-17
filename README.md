@@ -53,7 +53,7 @@ pytest tests/
 
 **Recommends.** Specific optimizations with estimated token savings.
 
-**Streams.** Insights via OpenTelemetry to Grafana/Datadog/custom tools.
+**Streams.** Insights via OpenTelemetry to any compatible observability tool.
 
 ---
 
@@ -135,7 +135,7 @@ OpenAnchor → OTEL Metrics
     ├─ prompt_category_distribution
     └─ anomaly_alerts
     ↓
-Grafana / Datadog / Custom Dashboards
+OpenTelemetry-Compatible Observability Tools
 ```
 
 ---
@@ -235,7 +235,7 @@ Shared Database
 ├─ Query APIs (Python)
 └─ OTEL Export
     ↓
-Grafana/Datadog/Custom Dashboards
+OpenTelemetry-Compatible Observability Tools
 ```
 
 **Important:** OpenAnchor uses PyTokenCalc's database. It doesn't create or manage its own database.
