@@ -1,47 +1,39 @@
 ---
 name: Bug Report
-about: Report a bug to help us improve OpenAnchor
+about: Report a bug to help us improve
 title: "[BUG] "
 labels: bug
 assignees: ''
-
 ---
 
-## Describe the Bug
-<!-- Clear and concise description of what the bug is -->
+## Description
+Briefly describe the bug.
 
 ## Steps to Reproduce
-<!-- Steps to reproduce the behavior -->
-1. 
-2. 
-3. 
+1. ...
+2. ...
+3. ...
 
 ## Expected Behavior
-<!-- What you expected to happen -->
+What should happen?
 
 ## Actual Behavior
-<!-- What actually happened -->
-
-## Error Messages
-<!-- Any error messages or stack traces -->
-```
-<error output>
-```
+What actually happened?
 
 ## Environment
-- Python version: 
-- OpenAnchor version: 
-- OS: 
-- Installation method (pip, docker, source): 
+- OS: [e.g. macOS, Linux, Windows]
+- Python version: [e.g. 3.10]
+- Library version: [e.g. 2.0.0]
 
-## Minimal Reproducible Example
-<!-- Minimal code example that reproduces the issue -->
+## Minimal Example
 ```python
+# Minimal code to reproduce the bug
+```
 
+## Error Message
+```
+# Paste full error traceback here
 ```
 
 ## Additional Context
-<!-- Any other context about the problem -->
-
-## Possible Solution
-<!-- Optional: suggest a fix or reason for the bug -->
+Any other context about the issue?
