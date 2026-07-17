@@ -7,20 +7,50 @@ optimization intelligence for AI token consumption.
 Built on PyTokenCalc (token accounting foundation).
 
 Quick Start:
-    from openanchor import TokenCollector
+    from openanchor import TokenCollector, Analytics
 
     collector = TokenCollector()
-    events = collector.collect_from_pytokencalc()
+    event = collector.capture_event(
+        call_id="call_1",
+        model="gpt-4",
+        provider="openai",
+        input_tokens=100,
+        output_tokens=50
+    )
+
+    # Analyze
+    from openanchor import AttributionModel
+    attribution = AttributionModel(collector.store)
+    breakdown = attribution.analyze_call("call_1")
 """
+
+from .models import (
+    TokenEvent,
+    TokenConsumption,
+    Attribution,
+    SessionStats,
+    OperationType,
+    RequestPhase,
+)
+from .collector import TokenCollector
+from .storage import EventStore, SqliteEventStore
+from .attribution import AttributionModel
+from .analytics import Analytics
 
 __version__ = "0.1.0"
 __author__ = "Georgi Mammen Mullassery"
 __license__ = "MIT"
 
-# Core API (will be populated as modules are implemented)
 __all__ = [
-    "TokenCollector",
     "TokenEvent",
+    "TokenConsumption",
+    "Attribution",
+    "SessionStats",
+    "OperationType",
+    "RequestPhase",
+    "TokenCollector",
+    "EventStore",
+    "SqliteEventStore",
     "AttributionModel",
-    "PatternDetector",
+    "Analytics",
 ]
