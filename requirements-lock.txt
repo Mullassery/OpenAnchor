@@ -14,7 +14,7 @@ clickhouse-driver>=0.5.0,<1.0
 # Observability
 opentelemetry-api>=1.20.0,<2.0
 opentelemetry-sdk>=1.20.0,<2.0
-opentelemetry-exporter-otlp>=0.41b0,<1.0
+opentelemetry-exporter-otlp>=1.44.0,<2.0
 
 # HTTP/REST
 httpx>=0.24.0,<1.0
