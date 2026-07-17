@@ -12,43 +12,6 @@ Like Helicone but focused on token INTELLIGENCE instead of cost tracking. Like L
 
 ---
 
-## Roadmap
-
-### v0.1.0 ✅ RELEASED
-- 6-Dimensional Token Attribution (WHEN, WHERE, HOW, WHICH, SESSION, WHY)
-- Token Collection & Aggregation
-- Analytics APIs (query by operation, phase, model, time)
-- LangChain Middleware Integration
-- SQLite Storage (PostgreSQL v1.0)
-- 25 Tests (100% passing)
-
-### v0.2.0 (In Progress - 6-week roadmap)
-**Priority P0 (Weeks 1-2):**
-- [Task 2.1] Pattern Detection & Anomaly Alerts (2 weeks)
-- [Task 2.2] OpenTelemetry Export to Grafana/Datadog (1.5 weeks)
-
-**Priority P1 (Weeks 2-3, parallel):**
-- [Task 2.3] Auto Prompt Tagging (ML-based, 95%+ accuracy)
-- [Task 2.4] LangSmith Integration
-- [Task 2.5] LlamaIndex Integration
-
-**Priority P2 (Weeks 3-4, dependent):**
-- [Task 2.6] Cost Optimization Engine (5 techniques: DocIngest, LazyMCP, ContextCompressor, Caveman, SkillLoader)
-- [Task 2.7] Quality Assurance Framework (A/B testing, auto-rollback)
-
-**Expected Release:** Mid-August 2026
-
-For full task breakdown, see [OPENANCHOR v0.2 Roadmap](planning/OPENANCHOR_PRODUCT_VISION.md)
-
-### v1.0 (Later)
-- PostgreSQL Support
-- Enterprise Dashboard
-- Advanced Cost Optimization
-- Multi-Model Orchestration
-- Custom Optimization Rules
-
----
-
 ## Installation
 
 ### For Users
