@@ -5,11 +5,13 @@
 ![Python 3.9+](https://img.shields.io/badge/Python-3.9+-blue.svg)
 ![Next: v0.2 (6-week roadmap)](https://img.shields.io/badge/Next-v0.2%20(6--week%20roadmap)-blue)
 
-**OpenAnchor is a token intelligence middleware that intercepts LLM API calls, measures token consumption across six dimensions, detects patterns and anomalies, and provides actionable optimization recommendations—all with OTEL export for your observability stack.**
+**OpenAnchor is a token attribution and cost governance engine. Understand where every token goes and why. Enable cost-quality tradeoff optimization.**
 
-Think of it as a **token profiler for your LLM system**: understand where tokens are being spent, optimize without guesswork, and make data-driven decisions about prompt engineering and retrieval strategies.
+**Architectural Role:** Owns cost intelligence and token attribution. Provides 6D token attribution (who, what, when, where, why, how much) and cost governance. Integrates with PyStreamMCP for intelligent orchestration and StatGuardian for cost validation.
 
-**Designed as an open-source alternative to Helicone, with deep integrations for LangChain, LlamaIndex, and raw API proxy modes.**
+Think of it as a **token profiler + cost optimizer for your LLM system**: understand token distribution, detect cost anomalies, optimize without guesswork, and make data-driven decisions about prompt engineering and retrieval strategies.
+
+**Designed as an open-source alternative to Helicone and Langfuse, with deep integrations for LangChain, LlamaIndex, and raw API proxy modes.**
 
 > **Dependency Note:** OpenAnchor requires [PyTokenCalc](https://github.com/Mullassery/pytokencalc) for accurate token counting. Installing `pip install openanchor` automatically includes PyTokenCalc as a dependency.
 
