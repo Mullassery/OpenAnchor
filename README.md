@@ -53,7 +53,7 @@ OpenAnchor intercepts every LLM call and answers these questions automatically:
 ✅ **Automatic Pattern Detection** — Find inefficiencies, anomalies, drift, and trends  
 ✅ **Actionable Recommendations** — Get specific optimization suggestions with estimated savings  
 ✅ **Historical Analysis** — Query token usage by time, prompt category, session, or model  
-✅ **OTEL Export** — Stream metrics to your existing observability tools (Datadog, New Relic, etc.)  
+✅ **OTEL Export** — Stream metrics to your observability stack (Prometheus, Jaeger, Tempo, Datadog, New Relic, etc.)  
 ✅ **Zero Code Changes** — Middleware intercepts calls; your code stays the same  
 
 Result: **Optimize token usage by 30–60%** without guesswork.
@@ -738,7 +738,7 @@ python langchain_example.py
 ### v0.2 (6 weeks) — Advanced Analytics
 - 🎯 Pattern detection (anomalies, trends, efficiency)
 - 🎯 Recommendation engine (ranked suggestions)
-- 🎯 OTEL export (Datadog, New Relic, etc.)
+- 🎯 OTEL export (Prometheus, Jaeger, Tempo, Datadog, New Relic, etc.)
 - 🎯 Langfuse integration
 - 🎯 Dashboard (basic analytics view)
 
