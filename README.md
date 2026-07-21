@@ -40,21 +40,21 @@ Think of it as a **token profiler + cost optimizer for your LLM system**: unders
 
 LLM applications eat tokens—and cost scales linearly with token volume. But most teams are flying blind:
 
-- 📊 **No visibility:** Where do tokens go? System prompt? User input? Retrieval context? Model overhead?
-- 🎯 **No insights:** Are you spending tokens efficiently? What's normal vs. anomalous?
-- 💡 **No recommendations:** How do you actually optimize? Prompt tweaking? Better retrieval? Different model?
-- 🔍 **No history:** How has token usage changed over time? Which prompts regressed?
+- **No visibility:** Where do tokens go? System prompt? User input? Retrieval context? Model overhead?
+- **No insights:** Are you spending tokens efficiently? What's normal vs. anomalous?
+- **No recommendations:** How do you actually optimize? Prompt tweaking? Better retrieval? Different model?
+- **No history:** How has token usage changed over time? Which prompts regressed?
 
 ### The Solution: OpenAnchor
 
 OpenAnchor intercepts every LLM call and answers these questions automatically:
 
-✅ **6D Token Attribution** — Break down tokens by purpose (system, user, context, overhead, inference, etc.)  
-✅ **Automatic Pattern Detection** — Find inefficiencies, anomalies, drift, and trends  
-✅ **Actionable Recommendations** — Get specific optimization suggestions with estimated savings  
-✅ **Historical Analysis** — Query token usage by time, prompt category, session, or model  
-✅ **OTEL Export** — Stream metrics to your observability stack (Prometheus, Jaeger, Tempo, Datadog, New Relic, etc.)  
-✅ **Zero Code Changes** — Middleware intercepts calls; your code stays the same  
+ **6D Token Attribution** — Break down tokens by purpose (system, user, context, overhead, inference, etc.) 
+ **Automatic Pattern Detection** — Find inefficiencies, anomalies, drift, and trends 
+ **Actionable Recommendations** — Get specific optimization suggestions with estimated savings 
+ **Historical Analysis** — Query token usage by time, prompt category, session, or model 
+ **OTEL Export** — Stream metrics to your observability stack (Prometheus, Jaeger, Tempo, Datadog, New Relic, etc.) 
+ **Zero Code Changes** — Middleware intercepts calls; your code stays the same 
 
 Result: **Optimize token usage by 30–60%** without guesswork.
 
@@ -86,7 +86,7 @@ cd openanchor
 
 # Create and activate virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate # On Windows: venv\Scripts\activate
 
 # Install in development mode with dev dependencies
 pip install -e ".[dev]"
@@ -109,8 +109,8 @@ from openanchor.middleware.langchain import OpenAnchorMiddleware
 
 # Initialize middleware
 middleware = OpenAnchorMiddleware(
-    database_url="sqlite:///openanchor.db",  # or PostgreSQL
-    project_name="my_rag_app"
+ database_url="sqlite:///openanchor.db", # or PostgreSQL
+ project_name="my_rag_app"
 )
 
 # Wrap your chain
@@ -122,7 +122,7 @@ response = chain.run("What does this document say?")
 # Analyze
 recommendations = middleware.get_recommendations()
 for rec in recommendations:
-    print(f"💡 {rec['action']} → Save {rec['tokens_saved']} tokens")
+ print(f" {rec['action']}  Save {rec['tokens_saved']} tokens")
 ```
 
 ### 30-Second Setup with LlamaIndex
@@ -132,8 +132,8 @@ from openanchor.middleware.llamaindex import OpenAnchorCallback
 
 # Initialize callback
 callback = OpenAnchorCallback(
-    database_url="sqlite:///openanchor.db",
-    project_name="my_rag_app"
+ database_url="sqlite:///openanchor.db",
+ project_name="my_rag_app"
 )
 
 # Attach to query engine
@@ -154,14 +154,14 @@ from openanchor import OpenAnchorProxy
 
 # Initialize proxy
 proxy = OpenAnchorProxy(
-    database_url="sqlite:///openanchor.db",
-    api_key="your-openai-key"
+ database_url="sqlite:///openanchor.db",
+ api_key="your-openai-key"
 )
 
 # Call through proxy instead of direct API
 response = proxy.call(
-    model="gpt-4",
-    messages=[{"role": "user", "content": "Hello"}]
+ model="gpt-4",
+ messages=[{"role": "user", "content": "Hello"}]
 )
 
 # Automatic analysis
@@ -183,9 +183,9 @@ Every LLM call is intercepted and recorded:
 response = chain.run("query")
 
 # Behind the scenes:
-# ✅ Request captured (prompt, model, parameters)
-# ✅ Response captured (tokens, latency, quality)
-# ✅ Stored in database for analysis
+# Request captured (prompt, model, parameters)
+# Response captured (tokens, latency, quality)
+# Stored in database for analysis
 ```
 
 **What's Captured:**
@@ -203,17 +203,17 @@ breakdown = analyzer.get_attribution(call_id="xyz")
 
 print(breakdown)
 # {
-#   "system_prompt": 500,           # Fixed system instructions
-#   "user_input": 2000,             # User's actual query
-#   "retrieval_context": 3500,      # Retrieved documents/chunks
-#   "model_overhead": 200,          # Model-specific formatting
-#   "reasoning_chain": 400,         # Intermediate reasoning steps
-#   "instruction_tuning": 300,      # Safety/instruction tokens
-#   "total": 7400,
-#   
-#   "efficiency_score": 0.78,       # 0-1 scale
-#   "patterns": ["retrieval_heavy"],
-#   "recommendation": "Improve retrieval ranking; save ~1050 tokens (14%)"
+# "system_prompt": 500, # Fixed system instructions
+# "user_input": 2000, # User's actual query
+# "retrieval_context": 3500, # Retrieved documents/chunks
+# "model_overhead": 200, # Model-specific formatting
+# "reasoning_chain": 400, # Intermediate reasoning steps
+# "instruction_tuning": 300, # Safety/instruction tokens
+# "total": 7400,
+# 
+# "efficiency_score": 0.78, # 0-1 scale
+# "patterns": ["retrieval_heavy"],
+# "recommendation": "Improve retrieval ranking; save ~1050 tokens (14%)"
 # }
 ```
 
@@ -231,30 +231,30 @@ patterns = analyzer.detect_patterns(session_id="project_q3")
 
 # Returns:
 {
-    "anomalies": [
-        {
-            "call_id": "xyz",
-            "issue": "retrieval_bloat",
-            "tokens": 5800,
-            "expected": 2500,
-            "confidence": 0.92
-        }
-    ],
-    "trends": [
-        {
-            "metric": "avg_input_tokens",
-            "trend": "increasing",
-            "change": "+15% over 7 days",
-            "likely_cause": "growing prompt complexity"
-        }
-    ],
-    "efficiency_issues": [
-        {
-            "issue": "redundant_system_prompt",
-            "tokens_wasted": 300,
-            "fix": "De-duplicate system messages"
-        }
-    ]
+ "anomalies": [
+ {
+ "call_id": "xyz",
+ "issue": "retrieval_bloat",
+ "tokens": 5800,
+ "expected": 2500,
+ "confidence": 0.92
+ }
+ ],
+ "trends": [
+ {
+ "metric": "avg_input_tokens",
+ "trend": "increasing",
+ "change": "+15% over 7 days",
+ "likely_cause": "growing prompt complexity"
+ }
+ ],
+ "efficiency_issues": [
+ {
+ "issue": "redundant_system_prompt",
+ "tokens_wasted": 300,
+ "fix": "De-duplicate system messages"
+ }
+ ]
 }
 ```
 
@@ -273,25 +273,25 @@ Get specific, actionable optimization suggestions:
 recommendations = analyzer.get_recommendations()
 
 # [
-#   {
-#       "rank": 1,
-#       "action": "Improve retrieval ranking (BM25 → Dense)",
-#       "tokens_saved": 1050,
-#       "current_usage": 3500,
-#       "optimized_usage": 2450,
-#       "confidence": 0.95,
-#       "effort": "medium",
-#       "timeline_hours": 4
-#   },
-#   {
-#       "rank": 2,
-#       "action": "Reduce system prompt verbosity",
-#       "tokens_saved": 200,
-#       "confidence": 0.88,
-#       "effort": "low",
-#       "timeline_hours": 1
-#   },
-#   ...
+# {
+# "rank": 1,
+# "action": "Improve retrieval ranking (BM25  Dense)",
+# "tokens_saved": 1050,
+# "current_usage": 3500,
+# "optimized_usage": 2450,
+# "confidence": 0.95,
+# "effort": "medium",
+# "timeline_hours": 4
+# },
+# {
+# "rank": 2,
+# "action": "Reduce system prompt verbosity",
+# "tokens_saved": 200,
+# "confidence": 0.88,
+# "effort": "low",
+# "timeline_hours": 1
+# },
+# ...
 # ]
 ```
 
@@ -312,9 +312,9 @@ stats = client.get_tokens_by_category()
 
 # By date range
 usage = client.get_session_stats(
-    session_id="project_q3",
-    start_date="2026-07-01",
-    end_date="2026-07-31"
+ session_id="project_q3",
+ start_date="2026-07-01",
+ end_date="2026-07-31"
 )
 # {"total_tokens": 450000, "avg_per_call": 2100, "calls": 214}
 
@@ -324,7 +324,7 @@ model_breakdown = client.get_tokens_by_model()
 
 # Percentile analysis
 p95 = client.get_percentile_tokens(percentile=95)
-# 4200 (95% of calls use ≤4200 tokens)
+# 4200 (95% of calls use 4200 tokens)
 
 # Efficiency scores
 scores = client.get_efficiency_by_prompt_type()
@@ -344,9 +344,9 @@ Stream insights to your observability stack:
 ```python
 # Configure OTEL export
 middleware = OpenAnchorMiddleware(
-    database_url="...",
-    otel_exporter="otlp",
-    otel_endpoint="http://localhost:4317"
+ database_url="...",
+ otel_exporter="otlp",
+ otel_endpoint="http://localhost:4317"
 )
 
 # Automatic metrics:
@@ -371,41 +371,41 @@ middleware = OpenAnchorMiddleware(
 ### Architecture Overview
 
 ```
-┌─────────────────────────────────────┐
-│     Your Application                │
-│  (LangChain / LlamaIndex / Direct)  │
-└────────────────┬────────────────────┘
-                 │
-                 ↓
-        ┌────────────────────┐
-        │  OpenAnchor        │
-        │  ┌──────────────┐  │
-        │  │ Intercept    │  │
-        │  │ Request/Resp │  │
-        │  └──────────────┘  │
-        │  ┌──────────────┐  │
-        │  │ Enrich with  │  │
-        │  │ PyTokenCalc  │  │
-        │  └──────────────┘  │
-        │  ┌──────────────┐  │
-        │  │ Analyze &    │  │
-        │  │ Recommend    │  │
-        │  └──────────────┘  │
-        └────────────────────┘
-                 │
-        ┌────────┴────────────────────────────┐
-        │                                      │
-        ↓                                      ↓
-   ┌──────────────────┐          ┌──────────────────────┐
-   │  Shared Database │          │  OTEL Metrics        │
-   │  (PyTokenCalc +  │          │                      │
-   │   OpenAnchor)    │          │  → Datadog           │
-   │                  │          │  → New Relic         │
-   │  ✅ Raw tokens   │          │  → CloudWatch        │
-   │  ✅ Attribution  │          │  → Your tool         │
-   │  ✅ Patterns     │          └──────────────────────┘
-   │  ✅ Recommend.   │
-   └──────────────────┘
+
+ Your Application 
+ (LangChain / LlamaIndex / Direct) 
+
+ 
+ 
+ 
+ OpenAnchor 
+ 
+ Intercept 
+ Request/Resp 
+ 
+ 
+ Enrich with 
+ PyTokenCalc 
+ 
+ 
+ Analyze & 
+ Recommend 
+ 
+ 
+ 
+ 
+ 
+  
+ 
+ Shared Database OTEL Metrics 
+ (PyTokenCalc + 
+ OpenAnchor)  Datadog 
+  New Relic 
+ Raw tokens  CloudWatch 
+ Attribution  Your tool 
+ Patterns 
+ Recommend. 
+ 
 ```
 
 ### Data Flow
@@ -432,44 +432,44 @@ Each LLM call creates a record:
 
 ```python
 {
-  "call_id": "abc123def456",
-  "timestamp": "2026-07-15T10:00:00Z",
-  "session_id": "project_q3",
-  
-  # Request data
-  "request": {
-    "model": "gpt-4",
-    "provider": "openai",
-    "prompt": "Given the following document: ...",
-    "system_message": "You are a helpful assistant.",
-    "parameters": {
-      "temperature": 0.7,
-      "max_tokens": 2000
-    }
-  },
-  
-  # Response data
-  "response": {
-    "tokens": {
-      "input": 3200,
-      "output": 450
-    },
-    "latency_ms": 1800,
-    "ttft_ms": 450,
-    "quality_score": 0.94
-  },
-  
-  # Attribution data (added by OpenAnchor)
-  "attribution": {
-    "system_prompt": 500,
-    "user_input": 2000,
-    "retrieval_context": 1500,
-    "model_overhead": 200
-  },
-  
-  # Metadata
-  "tags": {"workflow": "rag", "user_id": "user_42"},
-  "request_id": "req_xyz"
+ "call_id": "abc123def456",
+ "timestamp": "2026-07-15T10:00:00Z",
+ "session_id": "project_q3",
+ 
+ # Request data
+ "request": {
+ "model": "gpt-4",
+ "provider": "openai",
+ "prompt": "Given the following document: ...",
+ "system_message": "You are a helpful assistant.",
+ "parameters": {
+ "temperature": 0.7,
+ "max_tokens": 2000
+ }
+ },
+ 
+ # Response data
+ "response": {
+ "tokens": {
+ "input": 3200,
+ "output": 450
+ },
+ "latency_ms": 1800,
+ "ttft_ms": 450,
+ "quality_score": 0.94
+ },
+ 
+ # Attribution data (added by OpenAnchor)
+ "attribution": {
+ "system_prompt": 500,
+ "user_input": 2000,
+ "retrieval_context": 1500,
+ "model_overhead": 200
+ },
+ 
+ # Metadata
+ "tags": {"workflow": "rag", "user_id": "user_42"},
+ "request_id": "req_xyz"
 }
 ```
 
@@ -485,20 +485,20 @@ Each LLM call creates a record:
 from openanchor.middleware.langchain import OpenAnchorMiddleware
 
 middleware = OpenAnchorMiddleware(
-    database_url: str,           # SQLite or PostgreSQL URI
-    project_name: str,           # Project identifier
-    session_id: Optional[str] = None,
-    otel_exporter: Optional[str] = None,
-    otel_endpoint: Optional[str] = None,
-    enable_pattern_detection: bool = True,
-    enable_recommendations: bool = True
+ database_url: str, # SQLite or PostgreSQL URI
+ project_name: str, # Project identifier
+ session_id: Optional[str] = None,
+ otel_exporter: Optional[str] = None,
+ otel_endpoint: Optional[str] = None,
+ enable_pattern_detection: bool = True,
+ enable_recommendations: bool = True
 )
 
 # Methods
-middleware.get_attribution(call_id: str) → dict
-middleware.get_recommendations() → List[dict]
-middleware.detect_patterns(session_id: Optional[str]) → dict
-middleware.get_efficiency_score(call_id: str) → float
+middleware.get_attribution(call_id: str)  dict
+middleware.get_recommendations()  List[dict]
+middleware.detect_patterns(session_id: Optional[str])  dict
+middleware.get_efficiency_score(call_id: str)  float
 ```
 
 #### `OpenAnchorCallback` (LlamaIndex)
@@ -507,14 +507,14 @@ middleware.get_efficiency_score(call_id: str) → float
 from openanchor.middleware.llamaindex import OpenAnchorCallback
 
 callback = OpenAnchorCallback(
-    database_url: str,
-    project_name: str,
-    session_id: Optional[str] = None,
-    # ... same as middleware
+ database_url: str,
+ project_name: str,
+ session_id: Optional[str] = None,
+ # ... same as middleware
 )
 
 # Properties
-callback.analyzer → AnalysisEngine
+callback.analyzer  AnalysisEngine
 ```
 
 #### `OpenAnchorProxy` (Raw API)
@@ -523,41 +523,41 @@ callback.analyzer → AnalysisEngine
 from openanchor import OpenAnchorProxy
 
 proxy = OpenAnchorProxy(
-    database_url: str,
-    api_key: str,
-    provider: str = "openai",  # or "anthropic", "cohere"
-    project_name: str = "default"
+ database_url: str,
+ api_key: str,
+ provider: str = "openai", # or "anthropic", "cohere"
+ project_name: str = "default"
 )
 
 # Methods
-proxy.call(model: str, messages: List[dict], **kwargs) → dict
-proxy.analyzer → AnalysisEngine
+proxy.call(model: str, messages: List[dict], **kwargs)  dict
+proxy.analyzer  AnalysisEngine
 ```
 
 ### Analysis Engine API
 
 ```python
-analyzer = middleware.analyzer  # or callback.analyzer or proxy.analyzer
+analyzer = middleware.analyzer # or callback.analyzer or proxy.analyzer
 
 # Query token usage
-analyzer.get_tokens_by_category() → dict
-analyzer.get_tokens_by_model() → dict
-analyzer.get_tokens_by_date_range(start, end) → dict
-analyzer.get_session_stats(session_id, start_date, end_date) → dict
+analyzer.get_tokens_by_category()  dict
+analyzer.get_tokens_by_model()  dict
+analyzer.get_tokens_by_date_range(start, end)  dict
+analyzer.get_session_stats(session_id, start_date, end_date)  dict
 
 # Attribution & patterns
-analyzer.get_attribution(call_id: str) → dict
-analyzer.detect_patterns(session_id: Optional[str]) → dict
-analyzer.detect_anomalies(threshold: float = 2.0) → List[dict]
+analyzer.get_attribution(call_id: str)  dict
+analyzer.detect_patterns(session_id: Optional[str])  dict
+analyzer.detect_anomalies(threshold: float = 2.0)  List[dict]
 
 # Optimization
-analyzer.get_recommendations(top_k: int = 10) → List[dict]
-analyzer.rank_prompts_by_efficiency() → List[dict]
-analyzer.estimate_savings(action: str) → float
+analyzer.get_recommendations(top_k: int = 10)  List[dict]
+analyzer.rank_prompts_by_efficiency()  List[dict]
+analyzer.estimate_savings(action: str)  float
 
 # Debugging
-analyzer.get_call_history(session_id: str, limit: int = 100) → List[dict]
-analyzer.compare_calls(call_id_1: str, call_id_2: str) → dict
+analyzer.get_call_history(session_id: str, limit: int = 100)  List[dict]
+analyzer.compare_calls(call_id_1: str, call_id_2: str)  dict
 ```
 
 ---
@@ -570,7 +570,7 @@ analyzer.compare_calls(call_id_1: str, call_id_2: str) → dict
 
 ```python
 middleware = OpenAnchorMiddleware(
-    database_url="sqlite:///openanchor.db"
+ database_url="sqlite:///openanchor.db"
 )
 ```
 
@@ -578,7 +578,7 @@ middleware = OpenAnchorMiddleware(
 
 ```python
 middleware = OpenAnchorMiddleware(
-    database_url="postgresql://user:password@localhost:5432/openanchor"
+ database_url="postgresql://user:password@localhost:5432/openanchor"
 )
 ```
 
@@ -588,9 +588,9 @@ middleware = OpenAnchorMiddleware(
 
 ```python
 middleware = OpenAnchorMiddleware(
-    otel_exporter="otlp",
-    otel_endpoint="http://localhost:4317",
-    otel_insecure=False
+ otel_exporter="otlp",
+ otel_endpoint="http://localhost:4317",
+ otel_insecure=False
 )
 ```
 
@@ -598,9 +598,9 @@ middleware = OpenAnchorMiddleware(
 
 ```python
 middleware = OpenAnchorMiddleware(
-    otel_exporter="datadog",
-    otel_api_key="your-dd-api-key",
-    otel_site="datadoghq.com"  # or datadoghq.eu
+ otel_exporter="datadog",
+ otel_api_key="your-dd-api-key",
+ otel_site="datadoghq.com" # or datadoghq.eu
 )
 ```
 
@@ -628,8 +628,8 @@ from openanchor.middleware.langchain import OpenAnchorMiddleware
 
 # Setup middleware
 middleware = OpenAnchorMiddleware(
-    database_url="sqlite:///openanchor.db",
-    project_name="rag_app"
+ database_url="sqlite:///openanchor.db",
+ project_name="rag_app"
 )
 
 # Run RAG queries for a week
@@ -640,10 +640,10 @@ breakdown = middleware.analyzer.get_attribution()
 recommendations = middleware.analyzer.get_recommendations()
 
 # Output:
-# 💡 Recommendation: Improve retrieval ranking (BM25 → Dense)
-#    Current: 3500 tokens per query
-#    Optimized: 2450 tokens per query
-#    Savings: 1050 tokens (30%)
+# Recommendation: Improve retrieval ranking (BM25  Dense)
+# Current: 3500 tokens per query
+# Optimized: 2450 tokens per query
+# Savings: 1050 tokens (30%)
 ```
 
 ### Agent System Debugging
@@ -656,14 +656,14 @@ recommendations = middleware.analyzer.get_recommendations()
 patterns = middleware.analyzer.detect_patterns()
 
 # Output:
-# 🔍 Pattern: Retrieval bloat
-#    Calls: 42 (19% of total)
-#    Avg tokens: 5800
-#    Expected: 2500
+# Pattern: Retrieval bloat
+# Calls: 42 (19% of total)
+# Avg tokens: 5800
+# Expected: 2500
 #
-# 🔍 Pattern: Redundant system prompts
-#    Repeated text: 300 tokens
-#    Fix: De-duplicate across steps
+# Pattern: Redundant system prompts
+# Repeated text: 300 tokens
+# Fix: De-duplicate across steps
 ```
 
 ### Prompt Efficiency Comparison
@@ -676,14 +676,14 @@ patterns = middleware.analyzer.detect_patterns()
 efficiency = middleware.analyzer.rank_prompts_by_efficiency()
 
 # Output:
-# 🏆 Prompt v3: 0.92 efficiency
-#    4200 tokens, 98% quality → Use this
+# Prompt v3: 0.92 efficiency
+# 4200 tokens, 98% quality  Use this
 #
 # Prompt v2: 0.84 efficiency
-#    6100 tokens, 96% quality → Too verbose
+# 6100 tokens, 96% quality  Too verbose
 #
 # Prompt v1: 0.71 efficiency
-#    7800 tokens, 94% quality → Deprecated
+# 7800 tokens, 94% quality  Deprecated
 ```
 
 ### Cost Allocation by User/Department
@@ -694,14 +694,14 @@ efficiency = middleware.analyzer.rank_prompts_by_efficiency()
 
 ```python
 breakdown = middleware.analyzer.get_tokens_by_dimension(
-    dimension="user_id",
-    date_range=("2026-07-01", "2026-07-31")
+ dimension="user_id",
+ date_range=("2026-07-01", "2026-07-31")
 )
 
 # Output:
-# alice@company.com: 145000 tokens → $2.90 (at $0.02/1K)
-# bob@company.com: 98000 tokens → $1.96
-# data_team: 321000 tokens → $6.42
+# alice@company.com: 145000 tokens  $2.90 (at $0.02/1K)
+# bob@company.com: 98000 tokens  $1.96
+# data_team: 321000 tokens  $6.42
 ```
 
 ---
@@ -727,35 +727,35 @@ python langchain_example.py
 ## Roadmap
 
 ### v0.1 (Current) — Middleware Foundation
-- ✅ LangChain integration
-- ✅ LlamaIndex integration
-- ✅ Raw proxy mode
-- ✅ SQLite/PostgreSQL support
-- ✅ Basic token attribution
-- ⏳ Pattern detection (in development)
-- ⏳ Recommendations engine (in development)
+- LangChain integration
+- LlamaIndex integration
+- Raw proxy mode
+- SQLite/PostgreSQL support
+- Basic token attribution
+-  Pattern detection (in development)
+-  Recommendations engine (in development)
 
 ### v0.2 (6 weeks) — Advanced Analytics
-- 🎯 Pattern detection (anomalies, trends, efficiency)
-- 🎯 Recommendation engine (ranked suggestions)
-- 🎯 OTEL export (Prometheus, Jaeger, Tempo, Datadog, New Relic, etc.)
-- 🎯 Langfuse integration
-- 🎯 Dashboard (basic analytics view)
+- Pattern detection (anomalies, trends, efficiency)
+- Recommendation engine (ranked suggestions)
+- OTEL export (Prometheus, Jaeger, Tempo, Datadog, New Relic, etc.)
+- Langfuse integration
+- Dashboard (basic analytics view)
 
 ### v0.3 (12 weeks) — Multi-Provider Support
-- 🎯 Anthropic Claude support
-- 🎯 Cohere support
-- 🎯 Azure OpenAI support
-- 🎯 Open-source model support (Llama, Mistral)
-- 🎯 Streaming token estimation
+- Anthropic Claude support
+- Cohere support
+- Azure OpenAI support
+- Open-source model support (Llama, Mistral)
+- Streaming token estimation
 
 ### v1.0 (16 weeks) — Production Ready
-- 🎯 Cost tracking (multi-currency, provider pricing)
-- 🎯 Advanced governance (quotas, alerts, policies)
-- 🎯 Enterprise SSO
-- 🎯 API key management
-- 🎯 Audit logging
-- 🎯 SLA monitoring
+- Cost tracking (multi-currency, provider pricing)
+- Advanced governance (quotas, alerts, policies)
+- Enterprise SSO
+- API key management
+- Audit logging
+- SLA monitoring
 
 See [ROADMAP.md](./ROADMAP.md) for detailed timeline.
 
@@ -789,7 +789,7 @@ test_connection("sqlite:///openanchor.db")
 
 ```python
 # Verify middleware is properly attached
-chain = my_chain | middleware  # NOT middleware | my_chain
+chain = my_chain | middleware # NOT middleware | my_chain
 
 # Check logs
 import logging
@@ -830,6 +830,6 @@ Integrates with LangChain, LlamaIndex, and OpenTelemetry ecosystems.
 
 **Want to contribute?** See [CLAUDE.md](./CLAUDE.md).
 
-**Last Updated:** 2026-07-20  
-**Status:** v0.1 Alpha (Middleware Architecture)  
+**Last Updated:** 2026-07-20 
+**Status:** v0.1 Alpha (Middleware Architecture) 
 **Maintainer:** Georgi Mammen Mullassery
