@@ -1,9 +1,13 @@
 # OpenAnchor: Token Intelligence for LLM Systems
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-![Status: v0.1 Released](https://img.shields.io/badge/Status-v0.1%20Released-brightgreen)
-![Python 3.9+](https://img.shields.io/badge/Python-3.9+-blue.svg)
+[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)]()
+![Status: v0.1.2 Released](https://img.shields.io/badge/Status-v0.1.2%20Released-brightgreen)
+![Python 3.9-3.13](https://img.shields.io/badge/Python-3.9%E2%80%933.13-blue.svg)
 ![Next: v0.2 (6-week roadmap)](https://img.shields.io/badge/Next-v0.2%20(6--week%20roadmap)-blue)
+
+### v0.1.2 Updates
+- 🐍 Full Python 3.9-3.13 support certified
+- 🔒 License updated to Proprietary
 
 **OpenAnchor is a token attribution and cost governance engine. Understand where every token goes and why. Enable cost-quality tradeoff optimization.**
 
