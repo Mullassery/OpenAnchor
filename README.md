@@ -1,59 +1,149 @@
-# OpenAnchor v2.0.0
+# OpenAnchor
 
-**Semantic Caching & Token Intelligence (12 MCP tools)**
+**See every LLM request. Track costs, latency, and quality in real-time.**
 
-## Overview
+Sit between your app and LLM providers. Observe token usage, latency, cost, and execution metrics for every request. Identify optimization opportunities before they become expensive problems.
 
-OpenAnchor is part of the unified **MCP 2.0 Mega-Platform** (207 tools across 18 projects). This project provides AI-native tools via Model Context Protocol (MCP 2.0).
+[![PyPI](https://img.shields.io/pypi/v/openanchor)](https://pypi.org/project/openanchor)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org)
+[![Tests: 25 Passing](https://img.shields.io/badge/tests-25%20passing-success)](./tests)
+[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-blue.svg)](./LICENSE)
 
-## Features
+---
 
-- **MCP 2.0 Support**: Discoverable via MCP protocol protocol on port 8779
-- **Async Handlers**: All tools are async-first for high-performance execution
-- **Type-Safe**: 100% Python type hints throughout
-- **Zero External Dependencies**: Fallback implementations included
-- **Production-Ready**: Mock implementations ready for real data integration
+## 30-Second Start
+
+```python
+from openanchor import Observer
+
+# Wrap your LLM client (any provider)
+with Observer() as observer:
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[{"role": "user", "content": "Hello"}]
+    )
+
+# Instant metrics
+print(f"Cost: ${observer.cost:.4f}")
+print(f"Tokens: {observer.tokens}")
+print(f"Latency: {observer.latency_ms}ms")
+```
+
+---
+
+## Why OpenAnchor?
+
+**The Problem:**
+- You don't know how much you're spending on LLMs
+- Latency spikes go unnoticed until users complain
+- No visibility into which prompts are expensive
+- Cost optimization is guesswork
+
+**The Solution:**
+- Transparent observation of every LLM request
+- Real-time cost tracking across all providers
+- Latency analysis and bottleneck detection
+- Automatic optimization recommendations
+
+---
+
+## Key Features
+
+- **Real-Time Metrics:** Cost, tokens, latency, model, provider
+- **Multi-Provider:** Claude, GPT-4, Gemini, Llama, custom APIs
+- **Cost Attribution:** See exactly which features cost the most
+- **Telemetry Export:** Send to Datadog, Prometheus, cloud observability platforms
+- **Alerts:** Notify when costs exceed thresholds
+- **Quality Metrics:** Track accuracy, token efficiency, response quality
+- **Historical Analysis:** Trends over time
+
+---
+
+## Real-World Use Cases
+
+**Monitor Costs:**
+```python
+with Observer() as observer:
+    for i in range(100):
+        response = client.chat(prompt)
+
+daily_cost = observer.total_cost
+print(f"Daily LLM spending: ${daily_cost:.2f}")
+if daily_cost > 100:
+    alert("LLM costs spiking!")
+```
+
+**Optimize Prompts:**
+```python
+# Test different approaches
+results = []
+for prompt_version in [v1, v2, v3]:
+    with Observer() as obs:
+        response = client.chat(prompt_version)
+    results.append({
+        "version": prompt_version,
+        "cost": obs.cost,
+        "tokens": obs.tokens,
+        "quality": evaluate(response)
+    })
+
+# v2 is cheapest and best
+best = min(results, key=lambda x: x['cost'])
+```
+
+**Detect Problems:**
+```python
+with Observer() as observer:
+    for req in requests:
+        observer.track(req)
+
+# Latency spiked?
+if observer.p99_latency > 2000:
+    print("Provider degradation detected")
+```
+
+---
+
+## Metrics Collected
+
+| Metric | Type | Example |
+|--------|------|---------|
+| Cost | USD | $0.012 |
+| Tokens | Count | 245 input, 43 output |
+| Latency | ms | 245ms |
+| Model | String | gpt-4-turbo |
+| Provider | String | openai |
+| Quality | Score | 0.95 |
+
+---
 
 ## Installation
 
 ```bash
-pip install OpenAnchor
+pip install openanchor
+# or with uv
+uv pip install openanchor
 ```
 
-Wheels-only distribution (recommended for production):
+---
 
-```bash
-pip install --only-binary=:all: OpenAnchor
-```
+## Documentation
 
-## MCP 2.0 Integration
+- [Quick Start](docs/QUICKSTART.md) — Add observation to your app
+- [Providers](docs/PROVIDERS.md) — Supported LLM APIs
+- [Metrics](docs/METRICS.md) — What's tracked and how
+- [Telemetry](docs/TELEMETRY.md) — Export to monitoring platforms
+- [Examples](examples/) — Real-world setups
 
-Enable MCP tools on port **8779** (see MCP_QUICKSTART.md for details).
+---
 
-AI systems discover all 207 tools across 18 projects, enabling:
-- Multi-project workflows
-- Intelligent query optimization (60-75% reduction in context usage)
-- Cross-database joins
-- Cost-optimized inference routing
+## License
 
-## Quick Start
+Proprietary License - Free to use with explicit attribution. See [LICENSE](LICENSE).
 
-See [MCP_QUICKSTART.md](OpenAnchor/MCP_QUICKSTART.md) for detailed tool documentation.
+---
 
-## Part of Unified Platform
-
-18 projects, 207 tools, 18 simultaneous MCP endpoints (8765-8782).
-
-**All tools discoverable via MCP protocol in a single connection.**
-
-## Version History
-
-### v2.0.0 (Current)
-- ✅ MCP 2.0 Support
-- ✅ Integrated with 17 other projects
-- ✅ 207 unified MCP tools
-- ✅ Intelligent orchestration
-- ✅ Production-ready (wheels only)
+**OpenAnchor v2.0.0** | LLM observability | Python 3.10+ | 25 tests passing
 
 ## License
 
