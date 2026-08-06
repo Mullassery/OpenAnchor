@@ -1,5 +1,5 @@
 """
-OpenAnchor: Token Consumption Intelligence Platform
+OpenAnchor v0.1.3: Token Consumption Intelligence Platform
 
 OpenAnchor provides observability, attribution, pattern detection, and
 optimization intelligence for AI token consumption.
@@ -24,6 +24,7 @@ Quick Start:
     breakdown = attribution.analyze_call("call_1")
 """
 
+# Core models and data structures
 from .models import (
     TokenEvent,
     TokenConsumption,
@@ -32,25 +33,68 @@ from .models import (
     OperationType,
     RequestPhase,
 )
+
+# Collection and storage
 from .collector import TokenCollector
 from .storage import EventStore, SqliteEventStore
+
+# Analysis
 from .attribution import AttributionModel
 from .analytics import Analytics
 
-__version__ = "0.1.0"
+# OKF cost governance
+from .okf_cost_governance import (
+    CostAnomaly,
+    BudgetPolicy,
+    OKFCostGovernance,
+)
+
+# OKF token profiles
+from .okf_token_profiles import (
+    TokenProfile,
+    OKFTokenProfileCatalog,
+    TokenProfileAnalyzer,
+)
+
+# OKF optimization tracking
+from .okf_optimization_tracking import (
+    OptimizationResult,
+    OKFOptimizationTracking,
+    OptimizationLeaderboard,
+)
+
+__version__ = "0.1.4"
 __author__ = "Georgi Mammen Mullassery"
-__license__ = "MIT"
+__license__ = "Proprietary"
 
 __all__ = [
+    # Models
     "TokenEvent",
     "TokenConsumption",
     "Attribution",
     "SessionStats",
     "OperationType",
     "RequestPhase",
+    # Collection/Storage
     "TokenCollector",
     "EventStore",
     "SqliteEventStore",
+    # Analysis
     "AttributionModel",
     "Analytics",
+    # OKF Cost Governance
+    "CostAnomaly",
+    "BudgetPolicy",
+    "OKFCostGovernance",
+    # OKF Token Profiles
+    "TokenProfile",
+    "OKFTokenProfileCatalog",
+    "TokenProfileAnalyzer",
+    # OKF Optimization
+    "OptimizationResult",
+    "OKFOptimizationTracking",
+    "OptimizationLeaderboard",
 ]
+
+# MCP 2.0 Support (v0.1.3+)
+from openanchor._mcp_connector import SemanticCache

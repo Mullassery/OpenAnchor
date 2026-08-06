@@ -1,0 +1,21 @@
+[mcp]
+enabled = true
+port = 8779
+discovery_method = "stdio"
+
+[mcp.tools]
+cache_prompt_embedding = true
+find_cached_similar = true
+estimate_token_usage = true
+analyze_cache_hit_rate = true
+optimize_for_caching = true
+attribute_token_cost = true
+get_cache_statistics = true
+invalidate_cache_entries = true
+batch_cache_prompts = true
+export_cache_manifest = true
+measure_cache_efficiency = true
+predict_cache_savings = true
+
+[mcp.security]
+require_auth = false
