@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openanchor"
-version = "0.4.0"
-description = "Cost optimization middleware for multi-provider LLM usage with federated learning across agent fleets"
+version = "0.5.0"
+description = "Cost optimization middleware with model evolution, adaptive tuning, and ensemble selection for agent fleets"
 readme = "README.md"
 license = {text = "Proprietary"}
 authors = [
