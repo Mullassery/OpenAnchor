@@ -1,512 +1,111 @@
-# 🚀 Production Deployment Guide
+# Production Deployment Guide
 
-Complete guide for deploying Mullassery dashboards in production environments.
+This guide describes deploying **OpenAnchor** itself — LLM token-attribution
+middleware you embed in your application. It does not run as a standalone
+service in most setups; you `pip install openanchor` and call it from your
+own app. This document covers the parts that *do* run standalone: the
+Docker image, the optional MCP semantic-cache server, and OTEL export.
 
 ## Pre-Production Checklist
 
-- [ ] All 9 Tier 1+2 repos installed via pip
-- [ ] Keyboard shortcuts configured: `bash scripts/setup_shortcuts.sh`
-- [ ] OTEL exporter installed: `pip install opentelemetry-exporter-otlp`
-- [ ] Monitoring backend selected (Prometheus/Datadog/Honeycomb/New Relic)
-- [ ] Environment variables configured
-- [ ] Dashboard tested locally: `dash-[package]-live`
-- [ ] JSON export verified: `dash-[package]-export`
+- [ ] `pip install openanchor` (or `openanchor[otel]` if you want OTLP export)
+- [ ] Storage backend chosen: in-memory `EventStore` (dev/tests) or
+      `SqliteEventStore` (persistent, single-process)
+- [ ] Privacy posture reviewed — see "Privacy" below; raw prompt/response
+      capture is off by default and should stay off unless you have a
+      documented reason and a retention policy
+- [ ] `retention_days` set on `SqliteEventStore` if you're persisting
+      captured events, so old events don't accumulate indefinitely
+- [ ] OTEL tracing configured if you want span export (`configure_tracing`,
+      see `OTEL_SETUP_GUIDE.md`) — off by default
+- [ ] If exposing the MCP semantic-cache server: confirm you actually want
+      it reachable beyond localhost before passing `host="0.0.0.0"`
+- [ ] Tests pass: `pytest tests/ -v`
+- [ ] `ruff check .`, `bandit -c .bandit -r openanchor/`, `mypy openanchor/`
+      all clean (see CI config in `.github/workflows/ci.yml`)
 
-## Production Architecture
+## Library usage (the common case)
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                   Production Deployment                      │
-└─────────────────────────────────────────────────────────────┘
+```python
+from openanchor import TokenCollector, SqliteEventStore
 
-Tier 1: Application Level
-  ├─ PyStreamAI (Deployment metrics)
-  ├─ PyStreamMCP (Tool orchestration)
-  ├─ PyStreamPDF (Document processing)
-  ├─ PyStreamXL (Formula extraction)
-  ├─ StatGuardian (Data quality)
-  └─ PyReverseETL (Activation pipelines)
+store = SqliteEventStore("openanchor.db", retention_days=30)
+collector = TokenCollector(store)
+collector.set_session("session_123")
 
-Tier 2: Infrastructure Level
-  ├─ PyTerrainMap (Spatial analysis)
-  ├─ PyRoboReplay (Multi-modal fusion)
-  └─ PyRoboSimulator (World engine)
-
-Tier 3: Dashboards (All packages above)
-  ├─ Persistent daemon mode (auto-start)
-  ├─ Keyboard shortcuts (dash-[pkg], dash-[pkg]-live, dash-[pkg]-export)
-  └─ OTEL exporters (Prometheus/Datadog/Honeycomb/New Relic)
-
-Tier 4: Monitoring Backend
-  ├─ Prometheus + Grafana (OSS, on-prem)
-  ├─ Datadog (Managed, enterprise)
-  ├─ Honeycomb (Cloud-native, tracing)
-  ├─ New Relic (Full observability)
-  └─ Jaeger (Distributed tracing)
+collector.capture_event(
+    call_id="call_1",
+    model="gpt-4",
+    provider="openai",
+    input_tokens=120,
+    output_tokens=45,
+)
 ```
 
-## Kubernetes Deployment
+No network exposure, no separate process — this runs inside your
+application's process.
 
-### 1. Install Mullassery Package
+## Docker
 
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: mullassery-config
-  namespace: default
-data:
-  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.observability:4317"
-  OTEL_DEPLOYMENT_ENVIRONMENT: "production"
-  OTEL_SERVICE_NAME: "pystreamai"
-
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: monitoring-credentials
-  namespace: default
-type: Opaque
-stringData:
-  DD_API_KEY: "your-datadog-api-key"
-  HONEYCOMB_API_KEY: "your-honeycomb-api-key"
-
----
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: mullassery-metrics-exporter
-  namespace: default
-spec:
-  schedule: "*/1 * * * *"  # Every minute
-  jobTemplate:
-    spec:
-      template:
-        spec:
-          serviceAccountName: mullassery-exporter
-          containers:
-          - name: exporter
-            image: python:3.11-slim
-            imagePullPolicy: IfNotPresent
-            envFrom:
-            - configMapRef:
-                name: mullassery-config
-            - secretRef:
-                name: monitoring-credentials
-            command:
-            - sh
-            - -c
-            - |
-              set -e
-              echo "Installing dependencies..."
-              pip install -q opentelemetry-exporter-otlp pystreamai
-              echo "Exporting metrics..."
-              dash-pystreamai-export
-              echo "✓ Metrics exported"
-            resources:
-              requests:
-                memory: "256Mi"
-                cpu: "100m"
-              limits:
-                memory: "512Mi"
-                cpu: "500m"
-          restartPolicy: OnFailure
-          backoffLimit: 3
-```
-
-### 2. OTEL Collector (OpenTelemetry)
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: otel-collector-config
-  namespace: observability
-data:
-  config.yaml: |
-    receivers:
-      otlp:
-        protocols:
-          grpc:
-            endpoint: 0.0.0.0:4317
-          http:
-            endpoint: 0.0.0.0:4318
-    
-    processors:
-      batch:
-        send_batch_size: 1000
-        timeout: 10s
-      
-      memory_limiter:
-        check_interval: 1s
-        limit_mib: 512
-    
-    exporters:
-      datadog:
-        api:
-          key: ${DD_API_KEY}
-          site: datadoghq.com
-      
-      prometheus:
-        endpoint: "0.0.0.0:8888"
-      
-      otlp:
-        endpoint: honeycomb-collector.observability:4317
-        headers:
-          x-honeycomb-team: ${HONEYCOMB_API_KEY}
-    
-    service:
-      pipelines:
-        metrics:
-          receivers: [otlp]
-          processors: [batch, memory_limiter]
-          exporters: [datadog, prometheus]
-        
-        traces:
-          receivers: [otlp]
-          processors: [batch]
-          exporters: [otlp]
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: otel-collector
-  namespace: observability
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: otel-collector
-  template:
-    metadata:
-      labels:
-        app: otel-collector
-    spec:
-      containers:
-      - name: otel-collector
-        image: otel/opentelemetry-collector-k8s:latest
-        ports:
-        - containerPort: 4317  # OTLP gRPC
-        - containerPort: 4318  # OTLP HTTP
-        - containerPort: 8888  # Prometheus
-        env:
-        - name: DD_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: monitoring-credentials
-              key: DD_API_KEY
-        - name: HONEYCOMB_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: monitoring-credentials
-              key: HONEYCOMB_API_KEY
-        volumeMounts:
-        - name: config
-          mountPath: /etc/otel
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "200m"
-          limits:
-            memory: "1Gi"
-            cpu: "1"
-      volumes:
-      - name: config
-        configMap:
-          name: otel-collector-config
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: otel-collector
-  namespace: observability
-spec:
-  type: ClusterIP
-  ports:
-  - name: otlp-grpc
-    port: 4317
-    targetPort: 4317
-  - name: otlp-http
-    port: 4318
-    targetPort: 4318
-  - name: prometheus
-    port: 8888
-    targetPort: 8888
-  selector:
-    app: otel-collector
-```
-
-### 3. Prometheus Scrape Config
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: prometheus-config
-  namespace: monitoring
-data:
-  prometheus.yml: |
-    global:
-      scrape_interval: 15s
-      evaluation_interval: 15s
-    
-    scrape_configs:
-    - job_name: 'mullassery'
-      kubernetes_sd_configs:
-      - role: pod
-        namespaces:
-          names:
-          - default
-      relabel_configs:
-      - source_labels: [__meta_kubernetes_pod_label_app]
-        action: keep
-        regex: otel-collector
-      - source_labels: [__meta_kubernetes_pod_container_port_number]
-        action: keep
-        regex: "8888"
-```
-
-## Docker Deployment
-
-### Single Service
-
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-
-# Install all Mullassery packages
-RUN pip install --no-cache-dir \
-  opentelemetry-exporter-otlp \
-  pystreamai \
-  pystreammcp \
-  pystreampdf \
-  pystreamxl \
-  statguardian \
-  pyreverseetl
-
-# Setup dashboard shortcuts
-COPY scripts/setup_shortcuts.sh /app/
-RUN bash /app/setup_shortcuts.sh
-
-# Export metrics every minute
-CMD ["bash", "-c", "\
-  export OTEL_EXPORTER_OTLP_ENDPOINT='${OTEL_ENDPOINT:-http://otel-collector:4317}'; \
-  while true; do \
-    echo '[Dashboard Export] Starting...'; \
-    dash-pystreamai-export && \
-    dash-pystreammcp-export && \
-    dash-pystreampdf-export; \
-    echo '[Dashboard Export] Complete. Sleeping 60s...'; \
-    sleep 60; \
-  done"]
-```
-
-### Docker Compose
-
-```yaml
-version: '3.8'
-
-services:
-  mullassery-exporter:
-    build: .
-    container_name: mullassery-dashboards
-    environment:
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
-      OTEL_DEPLOYMENT_ENVIRONMENT: production
-      DD_API_KEY: ${DD_API_KEY}
-    depends_on:
-      - otel-collector
-    networks:
-      - monitoring
-
-  otel-collector:
-    image: otel/opentelemetry-collector-k8s:latest
-    container_name: otel-collector
-    ports:
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP
-      - "8888:8888"   # Prometheus
-    volumes:
-      - ./otel-config.yaml:/etc/otel/config.yaml
-    command: ["--config=/etc/otel/config.yaml"]
-    networks:
-      - monitoring
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-    networks:
-      - monitoring
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    ports:
-      - "3000:3000"
-    environment:
-      GF_SECURITY_ADMIN_PASSWORD: admin
-    depends_on:
-      - prometheus
-    volumes:
-      - grafana_data:/var/lib/grafana
-    networks:
-      - monitoring
-
-networks:
-  monitoring:
-    driver: bridge
-
-volumes:
-  prometheus_data:
-  grafana_data:
-```
-
-## Monitoring Dashboards
-
-### Prometheus Queries
-
-```promql
-# PyStreamAI deployment health
-pystreamai_status
-
-# Inference latency (p99)
-histogram_quantile(0.99, pystreamai_latency_metrics_p99)
-
-# Error rate
-rate(pystreamai_error_handling_total_errors[5m])
-
-# Cost over 24h
-pystreamai_cost_metrics_24h_total
-
-# PyStreamMCP selective intelligence reduction
-pystreammcp_selective_intelligence_stats_filtered
-
-# StatGuardian data quality
-statguardian_data_quality_by_table
-
-# All packages uptime
-sum(rate(pystreamai_uptime[5m]))
-```
-
-### Grafana Dashboard JSON
-
-Import from: https://grafana.com/grafana/dashboards (search: "Mullassery")
-
-Or create manually:
-1. Data Source: Prometheus (http://localhost:9090)
-2. Panel 1: All Services Status (gauge)
-3. Panel 2: Metrics by Package (table)
-4. Panel 3: Error Rate Trend (graph)
-5. Panel 4: Cost Analysis (stat)
-
-## Health Checks
-
-### Liveness Check
+The included `Dockerfile` builds an image whose default command runs a
+minimal health server (`python -m openanchor serve --host 0.0.0.0 --port
+8080`), exposing `GET /health` and `GET /version`. This is mainly useful
+for smoke-testing the built image and for container orchestrators that
+want something to health-check; it is **not** a general-purpose OpenAnchor
+API server.
 
 ```bash
-#!/bin/bash
-# health_check.sh
-pystreamai dashboard --static > /dev/null 2>&1
-[ $? -eq 0 ] && echo "healthy" || echo "unhealthy"
+docker build -t openanchor .
+docker run -p 8080:8080 openanchor
+curl http://localhost:8080/health
 ```
 
-### Metrics Export Health
+`docker-compose.yml` wraps the same image with a named volume for
+persisting a SQLite event store under `/app/data` if you mount your own
+code that uses it.
 
-```bash
-#!/bin/bash
-# metrics_health.sh
-curl -s http://localhost:8000/metrics | grep -q pystreamai_status
-[ $? -eq 0 ] && echo "metrics OK" || echo "metrics FAIL"
+## Semantic caching / MCP server
+
+If you use `openanchor.SemanticCache` to expose the MCP tools
+(`cache_prompt_embedding`, `find_cached_similar`, etc) over a network
+port:
+
+```python
+from openanchor import SemanticCache
+
+cache = SemanticCache(cache_db_path="/data/openanchor_cache.db")
+# Defaults: host="127.0.0.1" (loopback only), no CORS origins allowed,
+# read-only least-privilege permissions. Widening any of that is an
+# explicit, deliberate opt-in — never silently exposed.
+mcp_url = cache.start_mcp_connector()
 ```
 
-## Logging & Debugging
+To expose it beyond localhost (e.g. inside a private network only other
+trusted services can reach), pass `host="0.0.0.0"` and explicit
+`allowed_origins`/`allowed_roles` — do this only behind your own network
+boundary/firewall/auth layer; OpenAnchor's connector itself does not
+terminate TLS or authenticate requests.
 
-### Enable Debug Logging
+Embeddings: real cosine-similarity search backed by Ollama
+(`nomic-embed-text` or similar) when reachable at `localhost:11434`, with
+an automatic, dependency-free fallback to a deterministic hashing
+embedder when Ollama isn't available.
 
-```bash
-export OTEL_LOG_LEVEL=DEBUG
-export OTEL_EXPORTER_OTLP_HEADERS="authorization=Bearer your_token"
-dash-pystreamai-live 2>&1 | tee /var/log/mullassery.log
-```
+## Privacy
 
-### Monitor Export Success
+See the README's "Privacy" section for the full posture. Summary:
 
-```bash
-tail -f /var/log/mullassery.log | grep -i "export\|error"
-```
+- Raw prompt/response excerpts are captured only if you explicitly opt in
+  (`OpenAnchorMiddleware(capture_raw_content=True)`); the default records
+  only a SHA-256 hash + length.
+- Opt-in captures are run through best-effort PII/secret redaction by
+  default.
+- `SqliteEventStore(retention_days=N)` auto-purges events past the
+  retention window.
 
-### Validate Metrics Format
+## Observability
 
-```bash
-cat /tmp/pystreamai_metrics.json | jq '.metrics'
-```
-
-## Performance Tuning
-
-### CPU/Memory Optimization
-
-```bash
-# Reduce export frequency in Kubernetes
-schedule: "*/5 * * * *"  # Every 5 minutes instead of 1
-
-# Batch multiple dashboards in single export
-for pkg in pystreamai pystreammcp pysteampdf; do
-  dash-$pkg-export
-done
-
-# Limit metric cardinality
-export OTEL_SAMPLING_RATE=0.1  # 10% sampling
-```
-
-### Network Optimization
-
-```bash
-# Use gRPC batching
-export OTEL_EXPORTER_OTLP_PROTOCOL=grpc
-
-# Increase batch size
-export OTEL_METRICS_EXPORTER_BATCH_SIZE=1000
-
-# Connection pooling (automatic in gRPC)
-```
-
-## Backup & Recovery
-
-### Export Metrics for Backup
-
-```bash
-#!/bin/bash
-BACKUP_DIR="/backups/mullassery-metrics"
-mkdir -p $BACKUP_DIR
-
-for pkg in pystreamai pystreammcp pystreampdf pystreamxl statguardian pyreverseetl pyterrainmap pyroboreplay pyrobosimulator; do
-  dash-$pkg-export > "$BACKUP_DIR/${pkg}_$(date +%Y%m%d_%H%M%S).json"
-done
-
-# Compress and upload
-tar -czf mullassery_metrics_backup.tar.gz $BACKUP_DIR
-aws s3 cp mullassery_metrics_backup.tar.gz s3://backup-bucket/mullassery/
-```
-
-## Compliance & Security
-
-- [ ] All API keys in environment variables (not in code)
-- [ ] OTEL endpoint uses mTLS (in production)
-- [ ] Metrics do not contain PII
-- [ ] Export logs retained for 90 days
-- [ ] Regular security audits of OTEL pipeline
-- [ ] Access control on Grafana/Datadog dashboards
-
----
-
-**Need help?** Check OTEL_SETUP_GUIDE.md for backend-specific setup.
+OTEL span export is real but opt-in (see `OTEL_SETUP_GUIDE.md`). Default
+is off; enabling it does not send any prompt/response content over the
+wire — only token counts, model/provider names, and performance metrics
+become span attributes.

@@ -1,5 +1,6 @@
 [mcp]
 enabled = true
+host = "127.0.0.1"  # loopback-only by default; opt in explicitly to bind wider
 port = 8779
 discovery_method = "stdio"
 
@@ -18,4 +19,5 @@ measure_cache_efficiency = true
 predict_cache_savings = true
 
 [mcp.security]
-require_auth = false
+require_auth = true
+cors_origins = []  # empty = no cross-origin access; add explicit origins to opt in

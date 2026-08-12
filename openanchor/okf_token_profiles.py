@@ -4,10 +4,10 @@ Token attribution profiles by model and domain, enabling efficient
 cost-aware query planning and model selection based on historical patterns.
 """
 
+import json
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
-import json
-from dataclasses import dataclass, asdict
 
 
 @dataclass
@@ -29,7 +29,7 @@ class TokenProfile:
 class OKFTokenProfileCatalog:
     """Manage token profiles as OKF documents."""
 
-    def __init__(self, catalog_dir: Path = None):
+    def __init__(self, catalog_dir: Optional[Path] = None):
         self.catalog_dir = catalog_dir or Path.cwd() / "token_profiles"
         self.catalog_dir.mkdir(exist_ok=True)
 
@@ -105,4 +105,4 @@ class TokenProfileAnalyzer:
 
         # Return model with lowest average tokens (most efficient)
         best = min(profiles, key=lambda p: p["avg_total_tokens"])
-        return best["model_id"]
+        return str(best["model_id"])

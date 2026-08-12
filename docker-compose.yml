@@ -1,50 +1,27 @@
 version: '3.8'
 
-services:
-  database:
-    image: clickhouse/clickhouse-server:latest
-    container_name: openanchor-db
-    ports:
-      - "8123:8123"
-      - "9000:9000"
-    environment:
-      CLICKHOUSE_DB: openanchor
-      CLICKHOUSE_USER: default
-      CLICKHOUSE_PASSWORD: ""
-    volumes:
-      - clickhouse_data:/var/lib/clickhouse
-      - ./docker/clickhouse.yml:/etc/clickhouse-server/config.d/custom.yml:ro
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8123/ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - openanchor-network
+# OpenAnchor's actual storage layer is SQLite (see openanchor/storage.py) or
+# in-memory — the package has no ClickHouse (or any other external
+# database) integration anywhere in the code, so this file no longer
+# pretends to run one. A previous version of this file spun up a
+# clickhouse-server container and set DATABASE_URL, neither of which
+# openanchor ever read.
 
+services:
   openanchor:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: openanchor-app
-    depends_on:
-      database:
-        condition: service_healthy
     environment:
-      DATABASE_URL: clickhouse://database:9000/openanchor
       PYTHONUNBUFFERED: "1"
     ports:
-      - "8000:8000"
+      - "8080:8080"
     volumes:
-      - .:/app
-      - /app/__pycache__
-    networks:
-      - openanchor-network
-    command: python -m pytest tests/ --cov=openanchor
+      - openanchor_data:/app/data
+    # Default image command runs the health server (see Dockerfile).
+    # Uncomment to run the test suite instead:
+    # command: python -m pytest tests/ --cov=openanchor
 
 volumes:
-  clickhouse_data:
-
-networks:
-  openanchor-network:
-    driver: bridge
+  openanchor_data:

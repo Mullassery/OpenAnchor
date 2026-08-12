@@ -2,23 +2,35 @@
 
 import json
 import sqlite3
+import threading
+from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Dict, List, Optional
 
-from .models import TokenEvent, Attribution, SessionStats, OperationType, RequestPhase
+from .models import Attribution, OperationType, RequestPhase, TokenEvent
 
 
 class EventStore:
-    """In-memory event store (for v0.1; PostgreSQL in v1.0)."""
+    """In-memory event store (for v0.1; PostgreSQL in v1.0).
+
+    Indexed by call_id/session_id so ``get_events_by_call``/
+    ``get_events_by_session`` are O(1) dict lookups instead of O(n) scans
+    over every stored event.
+    """
 
     def __init__(self):
         self._events: List[TokenEvent] = []
         self._attributions: Dict[str, Attribution] = {}
+        self._by_call: Dict[str, List[TokenEvent]] = defaultdict(list)
+        self._by_session: Dict[str, List[TokenEvent]] = defaultdict(list)
 
     def add_event(self, event: TokenEvent) -> None:
         """Add a token event."""
         self._events.append(event)
+        self._by_call[event.call_id].append(event)
+        if event.session_id:
+            self._by_session[event.session_id].append(event)
 
     def get_event(self, event_id: str) -> Optional[TokenEvent]:
         """Get event by ID."""
@@ -28,12 +40,12 @@ class EventStore:
         return None
 
     def get_events_by_call(self, call_id: str) -> List[TokenEvent]:
-        """Get all events for a call."""
-        return [e for e in self._events if e.call_id == call_id]
+        """Get all events for a call. O(1) via index."""
+        return list(self._by_call.get(call_id, []))
 
     def get_events_by_session(self, session_id: str) -> List[TokenEvent]:
-        """Get all events in a session."""
-        return [e for e in self._events if e.session_id == session_id]
+        """Get all events in a session. O(1) via index."""
+        return list(self._by_session.get(session_id, []))
 
     def get_events_by_timerange(
         self, start: datetime, end: datetime
@@ -53,19 +65,68 @@ class EventStore:
         """Get all events."""
         return self._events.copy()
 
+    def purge_older_than(self, cutoff: datetime) -> int:
+        """Remove events older than ``cutoff``. Returns the number removed."""
+        keep = [e for e in self._events if e.timestamp >= cutoff]
+        removed = len(self._events) - len(keep)
+        if removed:
+            self._events = keep
+            self._by_call = defaultdict(list)
+            self._by_session = defaultdict(list)
+            for e in keep:
+                self._by_call[e.call_id].append(e)
+                if e.session_id:
+                    self._by_session[e.session_id].append(e)
+        return removed
+
+    def clear(self) -> None:
+        """Clear all data."""
+        self._events = []
+        self._attributions = {}
+        self._by_call = defaultdict(list)
+        self._by_session = defaultdict(list)
+
 
 class SqliteEventStore:
-    """SQLite-backed event store for v0.1 (lightweight)."""
+    """SQLite-backed event store.
 
-    def __init__(self, db_path: str = "openanchor.db"):
+    Performance: reuses a single connection in WAL mode (rather than
+    opening/closing a fresh ``sqlite3.connect()`` per call, which was the
+    collector's hot-path bottleneck), so concurrent readers don't block
+    writers and repeated ``add_event`` calls avoid per-call connection
+    setup cost.
+
+    Privacy/retention: supports an optional ``retention_days`` TTL. When
+    set, events older than the retention window are purged automatically
+    every ``auto_purge_every`` writes (in addition to the existing manual
+    ``clear()``/``purge_expired()``), so captured call data doesn't
+    accumulate indefinitely by default once a retention policy is
+    configured.
+    """
+
+    def __init__(
+        self,
+        db_path: str = "openanchor.db",
+        retention_days: Optional[int] = None,
+        auto_purge_every: int = 500,
+    ):
         self.db_path = Path(db_path)
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        if str(self.db_path) != ":memory:":
+            self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self.retention_days = retention_days
+        self.auto_purge_every = auto_purge_every
+        self._write_count = 0
+        self._lock = threading.Lock()
+        self._conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
+        self._conn.row_factory = sqlite3.Row
+        self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA synchronous=NORMAL")
         self._init_db()
 
     def _init_db(self) -> None:
         """Initialize database schema."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute("""
+        with self._lock:
+            self._conn.execute("""
                 CREATE TABLE IF NOT EXISTS token_events (
                     event_id TEXT PRIMARY KEY,
                     call_id TEXT NOT NULL,
@@ -86,7 +147,7 @@ class SqliteEventStore:
                     tags TEXT
                 )
             """)
-            conn.execute("""
+            self._conn.execute("""
                 CREATE TABLE IF NOT EXISTS attributions (
                     call_id TEXT PRIMARY KEY,
                     by_phase TEXT NOT NULL,
@@ -96,21 +157,21 @@ class SqliteEventStore:
                     created_at TEXT NOT NULL
                 )
             """)
-            conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_events_call ON token_events(call_id)
-            """)
-            conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_events_session ON token_events(session_id)
-            """)
-            conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_events_timestamp ON token_events(timestamp)
-            """)
-            conn.commit()
+            self._conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_events_call ON token_events(call_id)"
+            )
+            self._conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_events_session ON token_events(session_id)"
+            )
+            self._conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_events_timestamp ON token_events(timestamp)"
+            )
+            self._conn.commit()
 
     def add_event(self, event: TokenEvent) -> None:
-        """Add a token event."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute("""
+        """Add a token event, reusing the shared connection."""
+        with self._lock:
+            self._conn.execute("""
                 INSERT INTO token_events (
                     event_id, call_id, session_id, timestamp, phase,
                     operation_type, prompt_template, model, provider,
@@ -136,13 +197,42 @@ class SqliteEventStore:
                 json.dumps(event.response_data) if event.response_data else None,
                 json.dumps(event.tags) if event.tags else None,
             ))
-            conn.commit()
+            self._conn.commit()
+            self._write_count += 1
+
+            should_purge = (
+                self.retention_days is not None
+                and self.auto_purge_every > 0
+                and self._write_count % self.auto_purge_every == 0
+            )
+
+        # Purge outside the lock's critical section for the insert, but
+        # purge_expired() takes the lock itself.
+        if should_purge:
+            self.purge_expired()
+
+    def purge_expired(self) -> int:
+        """Delete events older than ``retention_days``. No-op if unset.
+
+        Returns the number of events removed.
+        """
+        if self.retention_days is None:
+            return 0
+        cutoff = (datetime.utcnow() - timedelta(days=self.retention_days)).isoformat()
+        with self._lock:
+            cursor = self._conn.execute(
+                "SELECT COUNT(*) as c FROM token_events WHERE timestamp < ?", (cutoff,)
+            )
+            count = int(cursor.fetchone()["c"])
+            if count:
+                self._conn.execute("DELETE FROM token_events WHERE timestamp < ?", (cutoff,))
+                self._conn.commit()
+            return count
 
     def get_event(self, event_id: str) -> Optional[TokenEvent]:
         """Get event by ID."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute(
+        with self._lock:
+            cursor = self._conn.execute(
                 "SELECT * FROM token_events WHERE event_id = ?", (event_id,)
             )
             row = cursor.fetchone()
@@ -150,9 +240,8 @@ class SqliteEventStore:
 
     def get_events_by_call(self, call_id: str) -> List[TokenEvent]:
         """Get all events for a call."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute(
+        with self._lock:
+            cursor = self._conn.execute(
                 "SELECT * FROM token_events WHERE call_id = ? ORDER BY timestamp",
                 (call_id,),
             )
@@ -160,9 +249,8 @@ class SqliteEventStore:
 
     def get_events_by_session(self, session_id: str) -> List[TokenEvent]:
         """Get all events in a session."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute(
+        with self._lock:
+            cursor = self._conn.execute(
                 "SELECT * FROM token_events WHERE session_id = ? ORDER BY timestamp",
                 (session_id,),
             )
@@ -172,9 +260,8 @@ class SqliteEventStore:
         self, start: datetime, end: datetime
     ) -> List[TokenEvent]:
         """Get events within time range."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute(
+        with self._lock:
+            cursor = self._conn.execute(
                 """SELECT * FROM token_events
                    WHERE timestamp >= ? AND timestamp <= ?
                    ORDER BY timestamp""",
@@ -184,8 +271,8 @@ class SqliteEventStore:
 
     def add_attribution(self, attribution: Attribution) -> None:
         """Store attribution breakdown."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute("""
+        with self._lock:
+            self._conn.execute("""
                 INSERT OR REPLACE INTO attributions (
                     call_id, by_phase, by_operation, by_prompt, total_tokens, created_at
                 ) VALUES (?, ?, ?, ?, ?, ?)
@@ -197,13 +284,12 @@ class SqliteEventStore:
                 attribution.total_tokens,
                 attribution.created_at.isoformat(),
             ))
-            conn.commit()
+            self._conn.commit()
 
     def get_attribution(self, call_id: str) -> Optional[Attribution]:
         """Get attribution for a call."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute(
+        with self._lock:
+            cursor = self._conn.execute(
                 "SELECT * FROM attributions WHERE call_id = ?", (call_id,)
             )
             row = cursor.fetchone()
@@ -229,17 +315,21 @@ class SqliteEventStore:
 
     def all_events(self) -> List[TokenEvent]:
         """Get all events."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute("SELECT * FROM token_events ORDER BY timestamp")
+        with self._lock:
+            cursor = self._conn.execute("SELECT * FROM token_events ORDER BY timestamp")
             return [self._row_to_event(row) for row in cursor.fetchall()]
 
     def clear(self) -> None:
         """Clear all data (for testing)."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute("DELETE FROM token_events")
-            conn.execute("DELETE FROM attributions")
-            conn.commit()
+        with self._lock:
+            self._conn.execute("DELETE FROM token_events")
+            self._conn.execute("DELETE FROM attributions")
+            self._conn.commit()
+
+    def close(self) -> None:
+        """Close the underlying connection."""
+        with self._lock:
+            self._conn.close()
 
     @staticmethod
     def _row_to_event(row: sqlite3.Row) -> TokenEvent:

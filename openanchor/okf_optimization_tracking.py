@@ -4,11 +4,11 @@ Track which optimization strategies work best, measure success rates,
 and recommend optimizations based on historical performance.
 """
 
+import json
+from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
-from dataclasses import dataclass, field
-from datetime import datetime
-import json
 
 
 @dataclass
@@ -28,7 +28,7 @@ class OptimizationResult:
 class OKFOptimizationTracking:
     """Track optimization strategy effectiveness."""
 
-    def __init__(self, tracking_dir: Path = None):
+    def __init__(self, tracking_dir: Optional[Path] = None):
         self.tracking_dir = tracking_dir or Path.cwd() / "optimization_tracking"
         self.tracking_dir.mkdir(exist_ok=True)
 

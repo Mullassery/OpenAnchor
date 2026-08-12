@@ -1,8 +1,11 @@
 """
-OpenAnchor v0.1.3: Token Consumption Intelligence Platform
+OpenAnchor: LLM token-attribution middleware.
 
 OpenAnchor provides observability, attribution, pattern detection, and
-optimization intelligence for AI token consumption.
+optimization intelligence for AI token consumption — plus real OpenTelemetry
+span export (``openanchor.otel``) and real semantic caching backed by
+actual embeddings + SQLite + cosine similarity (``openanchor.semantic_cache``,
+``openanchor._mcp_tools``).
 
 Built on PyTokenCalc (token accounting foundation).
 
@@ -25,45 +28,56 @@ Quick Start:
 """
 
 # Core models and data structures
-from .models import (
-    TokenEvent,
-    TokenConsumption,
-    Attribution,
-    SessionStats,
-    OperationType,
-    RequestPhase,
-)
-
-# Collection and storage
-from .collector import TokenCollector
-from .storage import EventStore, SqliteEventStore
+from .analytics import Analytics
 
 # Analysis
 from .attribution import AttributionModel
-from .analytics import Analytics
+
+# Collection and storage
+from .collector import TokenCollector
+from .models import (
+    Attribution,
+    OperationType,
+    RequestPhase,
+    SessionStats,
+    TokenConsumption,
+    TokenEvent,
+)
 
 # OKF cost governance
 from .okf_cost_governance import (
-    CostAnomaly,
     BudgetPolicy,
+    CostAnomaly,
     OKFCostGovernance,
-)
-
-# OKF token profiles
-from .okf_token_profiles import (
-    TokenProfile,
-    OKFTokenProfileCatalog,
-    TokenProfileAnalyzer,
 )
 
 # OKF optimization tracking
 from .okf_optimization_tracking import (
-    OptimizationResult,
     OKFOptimizationTracking,
     OptimizationLeaderboard,
+    OptimizationResult,
 )
 
-__version__ = "0.1.4"
+# OKF token profiles
+from .okf_token_profiles import (
+    OKFTokenProfileCatalog,
+    TokenProfile,
+    TokenProfileAnalyzer,
+)
+
+# Observability (OTEL) — see openanchor/otel.py
+from .otel import configure_tracing, is_otel_available
+
+# Semantic caching primitives — see openanchor/semantic_cache.py
+from .semantic_cache import (
+    EmbeddingProvider,
+    HashingEmbeddingProvider,
+    OllamaEmbeddingProvider,
+    SemanticCacheStore,
+)
+from .storage import EventStore, SqliteEventStore
+
+__version__ = "0.6.0"
 __author__ = "Georgi Mammen Mullassery"
 __license__ = "Proprietary"
 
@@ -94,6 +108,15 @@ __all__ = [
     "OptimizationResult",
     "OKFOptimizationTracking",
     "OptimizationLeaderboard",
+    # Observability (OTEL)
+    "configure_tracing",
+    "is_otel_available",
+    # Semantic caching
+    "SemanticCacheStore",
+    "EmbeddingProvider",
+    "OllamaEmbeddingProvider",
+    "HashingEmbeddingProvider",
+    "SemanticCache",
 ]
 
 # MCP 2.0 Support (v0.1.3+)

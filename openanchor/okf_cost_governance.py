@@ -4,11 +4,11 @@ Budget enforcement, cost anomaly detection, and spending forecasts
 for LLM token consumption across organization.
 """
 
-from pathlib import Path
-from typing import Optional, Dict, List
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
 import json
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Dict, List, Optional
 
 
 @dataclass
@@ -37,7 +37,7 @@ class BudgetPolicy:
 class OKFCostGovernance:
     """Manage cost policies and detect anomalies."""
 
-    def __init__(self, governance_dir: Path = None):
+    def __init__(self, governance_dir: Optional[Path] = None):
         self.governance_dir = governance_dir or Path.cwd() / "cost_governance"
         self.governance_dir.mkdir(exist_ok=True)
         self.policies: Dict[str, BudgetPolicy] = {}
