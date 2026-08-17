@@ -1,27 +1,41 @@
 """LangChain integration for OpenAnchor."""
 
 import logging
-from typing import Any, Dict, List, Optional
 import time
 import uuid
+from typing import Any, Dict, List, Optional
 
-from ..collector import TokenCollector
-from ..attribution import AttributionModel
 from ..analytics import Analytics
+from ..attribution import AttributionModel
+from ..collector import TokenCollector
+from ..models import OperationType
+from ..privacy import summarize_captured_content
 from ..storage import EventStore
-from ..models import OperationType, RequestPhase
 
 logger = logging.getLogger(__name__)
 
 
 class OpenAnchorMiddleware:
-    """LangChain middleware for capturing and analyzing token consumption."""
+    """LangChain middleware for capturing and analyzing token consumption.
+
+    Privacy posture: OpenAnchor's whole job is intercepting LLM call
+    metadata, and this middleware can optionally capture excerpts of the
+    actual prompt/response text alongside it. That raw-content capture is
+    **off by default** (``capture_raw_content=False``) — only a content
+    hash + length is recorded unless a caller explicitly opts in. When
+    opted in, captured excerpts are (by default) run through a best-effort
+    PII/secret redaction pass (see ``openanchor.privacy``) before being
+    persisted. See the README's "Privacy" section for details.
+    """
 
     def __init__(
         self,
         project_name: str = "langchain_app",
         store: Optional[EventStore] = None,
         session_id: Optional[str] = None,
+        capture_raw_content: bool = False,
+        redact_captured_content: bool = True,
+        max_captured_chars: int = 500,
     ):
         """
         Initialize OpenAnchor middleware.
@@ -30,10 +44,24 @@ class OpenAnchorMiddleware:
             project_name: Name of the project
             store: Event store (defaults to in-memory)
             session_id: Session ID (auto-generated if not provided)
+            capture_raw_content: Whether ``WrappedRunnable.invoke`` should
+                store an excerpt of the actual prompt/response text.
+                Defaults to False — only a SHA-256 hash and length of the
+                content are recorded, never the raw text, unless a caller
+                explicitly opts in.
+            redact_captured_content: When ``capture_raw_content=True``,
+                whether to run captured excerpts through best-effort PII
+                redaction (emails, phone numbers, API keys, etc) before
+                storing. Defaults to True.
+            max_captured_chars: Maximum excerpt length when raw content
+                capture is enabled. Defaults to 500.
         """
         self.project_name = project_name
         self.store = store or EventStore()
         self.session_id = session_id or str(uuid.uuid4())
+        self.capture_raw_content = capture_raw_content
+        self.redact_captured_content = redact_captured_content
+        self.max_captured_chars = max_captured_chars
 
         self.collector = TokenCollector(self.store)
         self.collector.set_session(self.session_id)
@@ -42,6 +70,15 @@ class OpenAnchorMiddleware:
         self.analytics = Analytics(self.collector, self.attribution)
 
         logger.info(f"OpenAnchor initialized for {project_name} (session: {self.session_id})")
+
+    def _summarize_content(self, text: Any) -> Dict[str, Any]:
+        """Apply this middleware's configured privacy posture to captured text."""
+        return summarize_captured_content(
+            text,
+            capture_raw=self.capture_raw_content,
+            redact=self.redact_captured_content,
+            max_chars=self.max_captured_chars,
+        )
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """Make middleware callable for use as LangChain runnable."""
@@ -81,17 +118,21 @@ class OpenAnchorMiddleware:
                                 input_tokens = usage.get("input_tokens", 0)
                                 output_tokens = usage.get("output_tokens", 0)
 
-                    # Capture event
+                    # Capture event. Raw prompt/response text is only
+                    # persisted if the middleware was explicitly
+                    # configured with capture_raw_content=True; otherwise
+                    # only a content hash + length is stored (see
+                    # openanchor.privacy.summarize_captured_content).
                     inner_self.middleware.collector.capture_event(
                         call_id=call_id,
-                        model=self._get_model_name(input_data),
+                        model=inner_self._get_model_name(input_data),
                         provider="langchain",
                         input_tokens=input_tokens,
                         output_tokens=output_tokens,
                         latency_ms=latency_ms,
                         operation_type=OperationType.MODEL_REASONING,
-                        request_data={"input": str(input_data)[:500]},
-                        response_data={"output": str(result)[:500]},
+                        request_data=inner_self.middleware._summarize_content(input_data),
+                        response_data=inner_self.middleware._summarize_content(result),
                     )
 
                     return result
@@ -115,7 +156,7 @@ class OpenAnchorMiddleware:
             def _get_model_name(input_data: Any) -> str:
                 """Extract model name from input."""
                 if isinstance(input_data, dict):
-                    return input_data.get("model", "unknown")
+                    return str(input_data.get("model", "unknown"))
                 return "unknown"
 
         return WrappedRunnable(self)

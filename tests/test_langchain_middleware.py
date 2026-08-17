@@ -1,6 +1,7 @@
 """Tests for LangChain middleware integration."""
 
 import pytest
+
 from openanchor.middleware.langchain import OpenAnchorMiddleware
 from openanchor.models import OperationType
 
@@ -203,6 +204,150 @@ class TestOpenAnchorMiddleware:
 
         recommendations = middleware.get_recommendations()
         assert any("low-quality" in r["action"].lower() for r in recommendations)
+
+
+class _FakeRunnable:
+    """Minimal stand-in for a LangChain runnable, for exercising
+    WrappedRunnable.invoke() without a real LangChain dependency."""
+
+    def __init__(self, response_metadata=None, response_text="fake response"):
+        self._response_metadata = response_metadata or {}
+        self._response_text = response_text
+        self.invoke_calls = []
+
+    def invoke(self, input_data, config=None):
+        self.invoke_calls.append((input_data, config))
+        return _FakeResult(self._response_metadata, self._response_text)
+
+    def stream(self, input_data, config=None):
+        yield _FakeResult(self._response_metadata, self._response_text)
+
+
+class _FakeResult:
+    def __init__(self, response_metadata, text):
+        self.response_metadata = response_metadata
+        self._text = text
+
+    def __str__(self):
+        return self._text
+
+
+class TestWrappedRunnableInvoke:
+    """WrappedRunnable.invoke() previously had zero test coverage, and had
+    a real bug: it called `self._get_model_name(...)` inside a nested
+    closure where `self` actually resolved to the outer
+    `OpenAnchorMiddleware` instance (which has no such method) rather than
+    `inner_self`/`WrappedRunnable` — an AttributeError on every real call.
+    """
+
+    def test_invoke_captures_a_token_event(self):
+        middleware = OpenAnchorMiddleware(project_name="test")
+        runnable = _FakeRunnable(
+            response_metadata={"usage": {"input_tokens": 42, "output_tokens": 17}}
+        )
+        wrapped = middleware(runnable)
+
+        result = wrapped.invoke({"model": "gpt-4", "prompt": "hi"})
+
+        assert str(result) == "fake response"
+        assert len(runnable.invoke_calls) == 1
+
+        stats = middleware.get_session_stats()
+        assert stats["total_calls"] == 1
+        assert stats["total_tokens"] == 59  # 42 + 17
+
+    def test_invoke_extracts_model_name_from_dict_input(self):
+        middleware = OpenAnchorMiddleware(project_name="test")
+        runnable = _FakeRunnable()
+        wrapped = middleware(runnable)
+
+        wrapped.invoke({"model": "claude-3-opus", "prompt": "hi"})
+
+        events = middleware.store.all_events()
+        assert events[0].model == "claude-3-opus"
+
+    def test_invoke_falls_back_to_unknown_model_for_non_dict_input(self):
+        middleware = OpenAnchorMiddleware(project_name="test")
+        runnable = _FakeRunnable()
+        wrapped = middleware(runnable)
+
+        wrapped.invoke("a plain string prompt, not a dict")
+
+        events = middleware.store.all_events()
+        assert events[0].model == "unknown"
+
+    def test_invoke_defaults_to_no_raw_content_capture(self):
+        middleware = OpenAnchorMiddleware(project_name="test")
+        runnable = _FakeRunnable(response_text="the actual llm response text")
+        wrapped = middleware(runnable)
+
+        wrapped.invoke({"model": "gpt-4", "prompt": "a secret prompt with PII a@b.com"})
+
+        events = middleware.store.all_events()
+        assert events[0].request_data["captured"] is False
+        assert "excerpt" not in events[0].request_data
+        assert "a@b.com" not in str(events[0].request_data)
+        assert "content_sha256" in events[0].request_data
+
+    def test_invoke_opt_in_raw_capture_redacts_pii_by_default(self):
+        middleware = OpenAnchorMiddleware(project_name="test", capture_raw_content=True)
+        runnable = _FakeRunnable()
+        wrapped = middleware(runnable)
+
+        wrapped.invoke({"model": "gpt-4", "prompt": "contact a@b.com for details"})
+
+        events = middleware.store.all_events()
+        assert events[0].request_data["captured"] is True
+        assert "a@b.com" not in events[0].request_data["excerpt"]
+        assert "<REDACTED_EMAIL>" in events[0].request_data["excerpt"]
+
+    def test_invoke_opt_in_raw_capture_without_redaction(self):
+        middleware = OpenAnchorMiddleware(
+            project_name="test", capture_raw_content=True, redact_captured_content=False
+        )
+        runnable = _FakeRunnable()
+        wrapped = middleware(runnable)
+
+        wrapped.invoke({"model": "gpt-4", "prompt": "contact a@b.com for details"})
+
+        events = middleware.store.all_events()
+        assert "a@b.com" in events[0].request_data["excerpt"]
+
+    def test_invoke_with_no_usage_metadata_defaults_to_zero_tokens(self):
+        middleware = OpenAnchorMiddleware(project_name="test")
+        runnable = _FakeRunnable(response_metadata={})
+        wrapped = middleware(runnable)
+
+        wrapped.invoke({"model": "gpt-4"})
+
+        events = middleware.store.all_events()
+        assert events[0].tokens.total_tokens == 0
+
+    def test_invoke_propagates_runnable_exceptions(self):
+        class _RaisingRunnable:
+            def invoke(self, input_data, config=None):
+                raise RuntimeError("boom")
+
+        middleware = OpenAnchorMiddleware(project_name="test")
+        wrapped = middleware(_RaisingRunnable())
+
+        with pytest.raises(RuntimeError, match="boom"):
+            wrapped.invoke({"model": "gpt-4"})
+
+    def test_batch_invokes_each_input(self):
+        middleware = OpenAnchorMiddleware(project_name="test")
+        runnable = _FakeRunnable()
+        wrapped = middleware(runnable)
+
+        results = wrapped.batch([{"model": "gpt-4"}, {"model": "gpt-4"}])
+
+        assert len(results) == 2
+        assert len(runnable.invoke_calls) == 2
+
+    def test_call_requires_a_runnable(self):
+        middleware = OpenAnchorMiddleware(project_name="test")
+        with pytest.raises(ValueError):
+            middleware("not a runnable")
 
 
 if __name__ == "__main__":

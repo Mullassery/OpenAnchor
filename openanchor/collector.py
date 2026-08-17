@@ -1,18 +1,18 @@
 """Token collection and event capture."""
 
-from datetime import datetime
-from typing import Optional, Dict, Any, List
 import logging
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from .models import (
-    TokenEvent,
-    TokenConsumption,
-    Attribution,
-    SessionStats,
     OperationType,
     RequestPhase,
+    SessionStats,
+    TokenConsumption,
+    TokenEvent,
 )
-from .storage import EventStore, SqliteEventStore
+from .otel import start_span
+from .storage import EventStore
 
 logger = logging.getLogger(__name__)
 
@@ -74,32 +74,53 @@ class TokenCollector:
         Returns:
             The captured TokenEvent
         """
-        event = TokenEvent(
-            call_id=call_id,
-            timestamp=datetime.utcnow(),
-            phase=phase,
-            operation_type=operation_type,
-            prompt_template=prompt_template,
-            session_id=self._current_session,
-            tokens=TokenConsumption(
-                input_tokens=input_tokens, output_tokens=output_tokens
-            ),
-            model=model,
-            provider=provider,
-            latency_ms=latency_ms,
-            ttft_ms=ttft_ms,
-            quality_score=quality_score,
-            request_data=request_data or {},
-            response_data=response_data or {},
-            tags=tags or {},
-        )
+        total_tokens = input_tokens + output_tokens
+        span_attributes = {
+            "openanchor.call_id": call_id,
+            "openanchor.model": model,
+            "openanchor.provider": provider,
+            "openanchor.operation_type": operation_type.value,
+            "openanchor.phase": phase.value,
+            "openanchor.session_id": self._current_session,
+            "llm.token_count.input": input_tokens,
+            "llm.token_count.output": output_tokens,
+            "llm.token_count.total": total_tokens,
+            "openanchor.latency_ms": latency_ms,
+            "openanchor.quality_score": quality_score,
+            # Cost isn't computed by the collector itself (no pricing
+            # table lives here), but if a caller already knows the cost
+            # of this call, they can pass it via tags["cost_usd"] and it
+            # will show up as a real span attribute.
+            "openanchor.cost_usd": (tags or {}).get("cost_usd"),
+        }
 
-        self.store.add_event(event)
-        logger.debug(
-            f"Captured event {event.event_id}: {event.tokens.total_tokens} tokens "
-            f"({event.operation_type.value})"
-        )
-        return event
+        with start_span("openanchor.capture_event", attributes=span_attributes):
+            event = TokenEvent(
+                call_id=call_id,
+                timestamp=datetime.utcnow(),
+                phase=phase,
+                operation_type=operation_type,
+                prompt_template=prompt_template,
+                session_id=self._current_session,
+                tokens=TokenConsumption(
+                    input_tokens=input_tokens, output_tokens=output_tokens
+                ),
+                model=model,
+                provider=provider,
+                latency_ms=latency_ms,
+                ttft_ms=ttft_ms,
+                quality_score=quality_score,
+                request_data=request_data or {},
+                response_data=response_data or {},
+                tags=tags or {},
+            )
+
+            self.store.add_event(event)
+            logger.debug(
+                f"Captured event {event.event_id}: {event.tokens.total_tokens} tokens "
+                f"({event.operation_type.value})"
+            )
+            return event
 
     def get_events_for_call(self, call_id: str) -> List[TokenEvent]:
         """Get all events for a call."""

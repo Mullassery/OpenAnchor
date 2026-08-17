@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Basic usage example for OpenAnchor."""
 
-from openanchor import TokenCollector, AttributionModel, Analytics
+from openanchor import Analytics, AttributionModel, TokenCollector
 from openanchor.models import OperationType, RequestPhase
 
 
@@ -94,12 +94,12 @@ def main():
     # Analyze first call
     attr_call1 = attribution.analyze_call("call_1")
     print(f"\nCall 1 Attribution (Total: {attr_call1.total_tokens} tokens):")
-    print(f"  By Phase:")
+    print("  By Phase:")
     for phase, tokens in attr_call1.by_phase.items():
         pct = 100 * tokens / attr_call1.total_tokens
         print(f"    - {phase.value}: {tokens} ({pct:.1f}%)")
 
-    print(f"  By Operation:")
+    print("  By Operation:")
     for op, tokens in attr_call1.by_operation.items():
         pct = 100 * tokens / attr_call1.total_tokens
         print(f"    - {op.value}: {tokens} ({pct:.1f}%)")
@@ -112,28 +112,28 @@ def main():
 
     # Session stats
     stats = analytics.get_session_stats(session_id)
-    print(f"\nSession Summary:")
+    print("\nSession Summary:")
     print(f"  Total tokens: {stats.total_tokens:,}")
     print(f"  Total calls: {stats.total_calls}")
     print(f"  Avg latency: {stats.avg_latency_ms:.1f}ms")
     print(f"  Avg quality: {stats.avg_quality_score:.2f}")
 
     # Token breakdown by operation
-    print(f"\nTokens by Operation:")
+    print("\nTokens by Operation:")
     by_op = analytics.get_tokens_by_operation(session_id)
     for op, tokens in sorted(by_op.items(), key=lambda x: x[1], reverse=True):
         pct = 100 * tokens / stats.total_tokens
         print(f"  - {op}: {tokens:,} ({pct:.1f}%)")
 
     # Token breakdown by phase
-    print(f"\nTokens by Phase:")
+    print("\nTokens by Phase:")
     by_phase = analytics.get_tokens_by_phase(session_id)
     for phase, tokens in sorted(by_phase.items(), key=lambda x: x[1], reverse=True):
         pct = 100 * tokens / stats.total_tokens
         print(f"  - {phase}: {tokens:,} ({pct:.1f}%)")
 
     # Prompt efficiency
-    print(f"\nPrompt Efficiency Ranking:")
+    print("\nPrompt Efficiency Ranking:")
     prompts = analytics.get_prompt_stats(session_id)
     for prompt, data in sorted(
         prompts.items(), key=lambda x: x[1]["efficiency_score"], reverse=True
@@ -144,7 +144,7 @@ def main():
         print(f"      Efficiency: {data['efficiency_score']:.4f}")
 
     # Problematic calls
-    print(f"\nProblematic Calls (high tokens, low quality):")
+    print("\nProblematic Calls (high tokens, low quality):")
     problematic = analytics.get_problematic_calls(session_id)
     if problematic:
         for call in problematic[:3]:
@@ -154,7 +154,7 @@ def main():
         print("  None found")
 
     # Summary
-    print(f"\n\n📋 Complete Summary:")
+    print("\n\n📋 Complete Summary:")
     print("-" * 60)
     summary = analytics.get_summary(session_id)
     print(f"Session: {summary['session_id']}")

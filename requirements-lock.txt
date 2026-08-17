@@ -4,32 +4,21 @@
 #
 # To use: pip install -r requirements-lock.txt
 # For development: pip install -r requirements-lock.txt && pip install -e ".[dev]"
+#
+# NOTE: this file previously listed clickhouse-driver, fastapi, uvicorn,
+# numpy, pandas, aiohttp, httpx, msgpack, and python-dateutil despite none
+# of them being imported anywhere in openanchor/. They've been removed as
+# dependency drift. The opentelemetry-* packages were also previously
+# unused; they're now genuinely wired into openanchor/otel.py.
 
 pydantic>=2.0,<3.0
-pytokencalc>=0.8.0,<1.0
+pytokencalc>=0.7.0,<1.0
+requests>=2.31.0,<3.0
 
-# Database
-clickhouse-driver>=0.5.0,<1.0
-
-# Observability
+# Observability (openanchor/otel.py — real span export for capture_event)
 opentelemetry-api>=1.20.0,<2.0
 opentelemetry-sdk>=1.20.0,<2.0
-opentelemetry-exporter-otlp>=0.41b0,<1.0
-
-# HTTP/REST
-httpx>=0.24.0,<1.0
-fastapi>=0.100.0,<1.0
-uvicorn>=0.23.0,<1.0
-
-# Data processing
-numpy>=1.24.0,<2.0
-pandas>=2.0.0,<3.0
-
-# Async
-aiohttp>=3.8.0,<4.0
-
-# Date/time
-python-dateutil>=2.8.2,<3.0
-
-# JSON/serialization
-msgpack>=1.0.0,<2.0
+# OTLP exporter is optional at runtime (only needed if you configure
+# exporter="otlp"); listed here for convenience since it's a small,
+# pure-Python-plus-requests package. See pyproject.toml's `otel` extra.
+opentelemetry-exporter-otlp-proto-http>=1.20.0,<2.0

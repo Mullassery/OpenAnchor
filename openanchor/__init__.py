@@ -1,25 +1,17 @@
 """
-OpenAnchor v0.2.0: Token Consumption Intelligence Platform
+OpenAnchor: LLM token-attribution middleware.
 
 OpenAnchor provides observability, attribution, pattern detection, and
-optimization intelligence for AI token consumption.
+optimization intelligence for AI token consumption — plus real OpenTelemetry
+span export (``openanchor.otel``) and real semantic caching backed by
+actual embeddings + SQLite + cosine similarity (``openanchor.semantic_cache``,
+``openanchor._mcp_tools``).
 
 Built on PyTokenCalc (token accounting foundation).
 
-Phase 1 Features (v0.1):
-- Token collection and attribution
-- Cost governance and anomaly detection
-- Token profiles and catalogs
-
-Phase 2 Features (v0.2):
-- Semantic caching for query deduplication
-- 6D Attribution analysis (tokens, latency, cost, quality, model, operation)
-- Advanced optimization recommendations
-
 Quick Start:
-    from openanchor import TokenCollector, Analytics, SemanticCache, Attribution6DAnalyzer
+    from openanchor import TokenCollector, Analytics
 
-    # Token collection
     collector = TokenCollector()
     event = collector.capture_event(
         call_id="call_1",
@@ -29,67 +21,63 @@ Quick Start:
         output_tokens=50
     )
 
-    # Semantic caching
-    cache = SemanticCache()
-    cache.put("What is AI?", "AI is artificial intelligence...")
-
-    # 6D Attribution
-    analyzer = Attribution6DAnalyzer()
-    summary = analyzer.get_summary()
+    # Analyze
+    from openanchor import AttributionModel
+    attribution = AttributionModel(collector.store)
+    breakdown = attribution.analyze_call("call_1")
 """
 
 # Core models and data structures
-from .models import (
-    TokenEvent,
-    TokenConsumption,
-    Attribution,
-    SessionStats,
-    OperationType,
-    RequestPhase,
-)
-
-# Collection and storage
-from .collector import TokenCollector
-from .storage import EventStore, SqliteEventStore
+from .analytics import Analytics
 
 # Analysis
 from .attribution import AttributionModel
-from .analytics import Analytics
+
+# Collection and storage
+from .collector import TokenCollector
+from .models import (
+    Attribution,
+    OperationType,
+    RequestPhase,
+    SessionStats,
+    TokenConsumption,
+    TokenEvent,
+)
 
 # OKF cost governance
 from .okf_cost_governance import (
-    CostAnomaly,
     BudgetPolicy,
+    CostAnomaly,
     OKFCostGovernance,
-)
-
-# OKF token profiles
-from .okf_token_profiles import (
-    TokenProfile,
-    OKFTokenProfileCatalog,
-    TokenProfileAnalyzer,
 )
 
 # OKF optimization tracking
 from .okf_optimization_tracking import (
-    OptimizationResult,
     OKFOptimizationTracking,
     OptimizationLeaderboard,
+    OptimizationResult,
 )
 
-# Phase 2: Semantic Caching & 6D Attribution (v0.2+)
+# OKF token profiles
+from .okf_token_profiles import (
+    OKFTokenProfileCatalog,
+    TokenProfile,
+    TokenProfileAnalyzer,
+)
+
+# Observability (OTEL) — see openanchor/otel.py
+from .otel import configure_tracing, is_otel_available
+
+# Semantic caching primitives — see openanchor/semantic_cache.py
 from .semantic_cache import (
-    SemanticCache as SemanticCacheImpl,
-    CachedEntry,
-    CacheOptimizer,
+    EmbeddingProvider,
+    HashingEmbeddingProvider,
+    OllamaEmbeddingProvider,
+    SemanticCacheStore,
 )
-from .attribution_6d import (
-    Attribution6D,
-    Attribution6DAnalyzer,
-    Quality,
-)
+from .storage import EventStore, SqliteEventStore
 
-__version__ = "0.2.0"
+__version__ = "0.6.0"
 __author__ = "Georgi Mammen Mullassery"
 __license__ = "Proprietary"
 
@@ -120,14 +108,15 @@ __all__ = [
     "OptimizationResult",
     "OKFOptimizationTracking",
     "OptimizationLeaderboard",
-    # Phase 2: Semantic Caching
-    "SemanticCacheImpl",
-    "CachedEntry",
-    "CacheOptimizer",
-    # Phase 2: 6D Attribution
-    "Attribution6D",
-    "Attribution6DAnalyzer",
-    "Quality",
+    # Observability (OTEL)
+    "configure_tracing",
+    "is_otel_available",
+    # Semantic caching
+    "SemanticCacheStore",
+    "EmbeddingProvider",
+    "OllamaEmbeddingProvider",
+    "HashingEmbeddingProvider",
+    "SemanticCache",
 ]
 
 # MCP 2.0 Support (v0.1.3+)

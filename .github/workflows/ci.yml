@@ -25,3 +25,12 @@ jobs:
 
       - name: Run pytest
         run: pytest tests/ -v --tb=short
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Type check (mypy)
+        run: mypy openanchor/
+
+      - name: Security scan (bandit)
+        run: bandit --ini .bandit -r openanchor/

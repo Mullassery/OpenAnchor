@@ -1,5 +1,76 @@
 # OpenAnchor Changelog
 
+## v0.6.0 — 2026-08-12
+
+### Real OTEL observability + real semantic caching
+
+Previous versions (through v0.5.0) described OTEL export and semantic
+caching in the project description, but neither was actually implemented:
+OTEL code existed only as unimported root-level boilerplate, and all 12
+semantic-caching MCP tools returned hardcoded constants regardless of
+input. This release makes both real.
+
+#### Added
+
+- **Real OTEL span export** (`openanchor/otel.py`): `TokenCollector.capture_event`
+  now wraps every capture in a real OTEL span with token counts,
+  model/provider, and cost (when supplied) as attributes. Configurable
+  console (default, safe) or OTLP exporter. Off by default; opt in via
+  `configure_tracing()` or `OPENANCHOR_OTEL_ENABLED=true`.
+- **Real semantic caching** (`openanchor/semantic_cache.py`): actual
+  embeddings (Ollama when reachable, deterministic hashing fallback
+  otherwise), a SQLite-backed cache store, and real cosine-similarity
+  lookups. All 12 MCP tools in `_mcp_tools.py` now compute real numbers
+  from actual cache contents/lookup history instead of hardcoded
+  constants.
+- **Privacy/redaction layer** (`openanchor/privacy.py`): raw
+  prompt/response capture in the LangChain middleware is now off by
+  default (only a content hash + length is stored); opt-in capture is
+  redacted (PII/secrets) by default. `SqliteEventStore` gained a
+  `retention_days` TTL with automatic purging.
+- **MCP connector security lockdown**: `_mcp_connector.py` now defaults to
+  `host="127.0.0.1"`, empty CORS origins, and least-privilege read-only
+  permissions (previously `0.0.0.0` / `origins: ["*"]` / wildcard
+  permissions by default).
+- **`python -m openanchor` entry point** (`openanchor/__main__.py`):
+  `version`/`health`/`serve` subcommands. Fixes the Dockerfile's `CMD`,
+  which previously referenced a nonexistent module.
+- 144 new tests (25 → 169) covering all of the above plus previously
+  untested modules: `SqliteEventStore`, `_mcp_connector.py`,
+  `_mcp_tools.py`, the `okf_*.py` modules, and
+  `WrappedRunnable.invoke()` — which surfaced and fixed a real bug (see
+  below).
+
+#### Fixed
+
+- **`WrappedRunnable.invoke()` crashed on every real call.** It referenced
+  `self._get_model_name(...)` inside a nested closure where `self`
+  resolved to the outer `OpenAnchorMiddleware` instance (no such method)
+  rather than the wrapped runnable. Never caught before because this path
+  had zero test coverage.
+- **The published wheel omitted `openanchor/middleware/` entirely.**
+  `[tool.setuptools] packages = ["openanchor"]` didn't include
+  subpackages, so `pip install openanchor` (through v0.5.0) shipped a
+  package where `openanchor.middleware.langchain` — the documented
+  LangChain integration — didn't exist. Fixed via
+  `[tool.setuptools.packages.find]`.
+- `SqliteEventStore` opened a fresh `sqlite3.connect()` per `add_event`
+  call (the collector's hot path); now reuses one WAL-mode connection.
+  In-memory `EventStore` did O(n) scans for `get_events_by_call`/
+  `get_events_by_session`; now O(1) via indexes.
+
+#### Changed
+
+- Trimmed unused dependencies from `requirements-lock.txt` (clickhouse-driver,
+  fastapi, uvicorn, numpy, pandas, aiohttp, httpx, msgpack, python-dateutil —
+  none were imported anywhere); the `opentelemetry-*` packages are now
+  genuinely used.
+- CI now runs `ruff check`, `mypy`, and `bandit` in addition to `pytest`.
+- Rewrote `PRODUCTION_DEPLOYMENT.md` and `OTEL_SETUP_GUIDE.md`, which
+  previously described an unrelated multi-repo dashboard ecosystem.
+
+---
+
 ## v0.1.0 — 2026-07-17
 
 ### 🎯 Initial Release: Token Intelligence Foundation
@@ -216,4 +287,4 @@ No previous versions.
 
 ## License
 
-MIT License — see LICENSE file.
+Proprietary License — free to use with explicit attribution. See LICENSE file.

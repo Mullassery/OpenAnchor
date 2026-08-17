@@ -1,11 +1,10 @@
 """Token attribution analysis (6D breakdown)."""
 
-from datetime import datetime
-from typing import Dict, List, Optional
-from collections import defaultdict
 import logging
+from collections import defaultdict
+from typing import Dict, List
 
-from .models import Attribution, OperationType, RequestPhase, TokenEvent
+from .models import Attribution, OperationType, RequestPhase
 from .storage import EventStore
 
 logger = logging.getLogger(__name__)

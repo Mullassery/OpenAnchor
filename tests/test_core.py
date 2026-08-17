@@ -1,19 +1,18 @@
 """Tests for core OpenAnchor components."""
 
+
 import pytest
-from datetime import datetime
+
+from openanchor.analytics import Analytics
+from openanchor.attribution import AttributionModel
+from openanchor.collector import TokenCollector
 from openanchor.models import (
-    TokenEvent,
-    TokenConsumption,
-    Attribution,
-    SessionStats,
     OperationType,
     RequestPhase,
+    TokenConsumption,
+    TokenEvent,
 )
-from openanchor.collector import TokenCollector
 from openanchor.storage import EventStore
-from openanchor.attribution import AttributionModel
-from openanchor.analytics import Analytics
 
 
 class TestTokenEvent:

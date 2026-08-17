@@ -35,9 +35,15 @@ ENV PATH=/root/.local/bin:$PATH \
 COPY openanchor /app/openanchor
 COPY tests /app/tests
 
+EXPOSE 8080
+
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD python -c "import openanchor; print('OK')" || exit 1
+    CMD python -m openanchor health || exit 1
 
-# Default command
-CMD ["python", "-m", "openanchor"]
+# Default command: run the built-in health server so the container has a
+# real foreground process. 0.0.0.0 is intentional here (bind-all is the
+# correct default *inside* a container network namespace); this is
+# unrelated to the MCP connector's host binding, which defaults to
+# loopback-only (see openanchor/_mcp_connector.py).
+CMD ["python", "-m", "openanchor", "serve", "--host", "0.0.0.0", "--port", "8080"]
