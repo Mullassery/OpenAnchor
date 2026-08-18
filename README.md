@@ -12,7 +12,7 @@ real semantic-caching layer, both backed by actual embeddings and storage
 
 [![PyPI](https://img.shields.io/pypi/v/openanchor)](https://pypi.org/project/openanchor)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue)](https://www.python.org)
-[![Tests: 169 Passing](https://img.shields.io/badge/tests-169%20passing-success)](./tests)
+[![Tests: 248 Passing](https://img.shields.io/badge/tests-248%20passing-success)](./tests)
 [![License: Proprietary (free w/ attribution)](https://img.shields.io/badge/License-Proprietary-blue.svg)](./LICENSE)
 
 ---
@@ -211,11 +211,13 @@ mypy openanchor/
 bandit --ini .bandit -r openanchor/
 ```
 
-169 tests across 9 test files, covering the collector/attribution/analytics
+248 tests across 14 test files, covering the collector/attribution/analytics
 core, the LangChain middleware (including the token-capture hot path),
 SQLite and in-memory storage, OTEL span export, semantic caching, the MCP
 connector's security defaults, the OKF cost-governance/token-profile/
-optimization-tracking modules, and the `__main__` CLI entry point.
+optimization-tracking modules, the `__main__` CLI entry point, the 6D
+attribution analyzer, and the federated-learning / multi-agent-optimization
+/ model-evolution modules.
 
 ---
 
