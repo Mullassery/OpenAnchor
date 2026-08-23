@@ -1,5 +1,31 @@
 # OpenAnchor Changelog
 
+## v0.6.1 — 2026-08-23
+
+### CI fixes and real bugs found along the way
+
+A merge (`a6eae4e`) had left CI red on `ruff` lint errors in the newly
+added attribution/federated-learning/multi-agent-optimization modules and
+their tests, which meant `mypy` and `bandit` — later steps in the same
+Linting job — had never actually run against that code.
+
+#### Fixed
+
+- 21 real `ruff` violations (unused imports, import ordering, unused
+  variables, an ambiguous single-letter variable name).
+- 13 real `mypy` type errors, including one that was hiding a genuine
+  bug: `simulate_fleet_optimization` returned a dict-of-dicts where its
+  declared return type (and every caller) expected a flat dict — fixed
+  with correct type annotations and the underlying return shape.
+- A `bandit` High-severity finding: a non-cryptographic ID generator in
+  `multi_agent_optimization.py` used MD5 without `usedforsecurity=False`,
+  which `bandit` (correctly) can't distinguish from a security use
+  without that flag.
+- Test-count badge/docs (169 tests/9 files) were stale from before the
+  merge; corrected to the real current count (248 tests/14 files).
+
+No public API changes.
+
 ## v0.6.0 — 2026-08-12
 
 ### Real OTEL observability + real semantic caching

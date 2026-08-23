@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openanchor"
-version = "0.6.0"
+version = "0.6.1"
 description = "LLM token-attribution middleware with OTEL observability and semantic caching"
 readme = "README.md"
 license = {text = "Proprietary"}

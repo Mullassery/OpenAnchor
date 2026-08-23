@@ -77,7 +77,7 @@ from .semantic_cache import (
 )
 from .storage import EventStore, SqliteEventStore
 
-__version__ = "0.6.0"
+__version__ = "0.6.1"
 __author__ = "Georgi Mammen Mullassery"
 __license__ = "Proprietary"
 
