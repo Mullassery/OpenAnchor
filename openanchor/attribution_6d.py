@@ -97,6 +97,7 @@ class Attribution6DAnalyzer:
         if not self.calls:
             return {}
 
+        values: List[float]
         if dimension == "tokens":
             values = [c.total_tokens for c in self.calls]
         elif dimension == "latency":
@@ -202,7 +203,7 @@ class Attribution6DAnalyzer:
         """Find anomalous calls (outliers in any dimension)."""
         anomalies = {}
 
-        dimensions = {
+        dimensions: Dict[str, List[float]] = {
             "tokens": [c.total_tokens for c in self.calls],
             "latency": [c.latency_ms for c in self.calls],
             "cost": [c.cost_usd for c in self.calls],

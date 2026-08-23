@@ -66,7 +66,8 @@ class MultiAgentCoordinator:
                                    patterns: Dict[str, float]) -> str:
         """Agent shares learned optimization patterns with fleet"""
         knowledge_id = hashlib.md5(
-            f"{source_agent}_{category}_{len(self.shared_knowledge)}".encode()
+            f"{source_agent}_{category}_{len(self.shared_knowledge)}".encode(),
+            usedforsecurity=False,
         ).hexdigest()[:12]
 
         relevance = self._calculate_pattern_relevance(category, patterns)
@@ -210,9 +211,9 @@ class FleetOptimizationEngine:
         """Set targets for fleet optimization (e.g., success_rate: 0.95, latency_ms: 500)"""
         self.optimization_targets = targets
 
-    def simulate_fleet_optimization(self, iterations: int = 10) -> Dict[str, float]:
+    def simulate_fleet_optimization(self, iterations: int = 10) -> Dict[str, Dict[str, float]]:
         """Simulate multi-iteration fleet optimization"""
-        results = {}
+        results: Dict[str, Dict[str, float]] = {}
 
         for iteration in range(iterations):
             # Each agent makes progress

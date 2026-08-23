@@ -55,7 +55,7 @@ class FederatedLearner:
             )
             self.agents[agent_id] = local_model
 
-    def compute_local_gradients(self, agent_id: str, training_data: Dict[str, float]) -> GradientUpdate:
+    def compute_local_gradients(self, agent_id: str, training_data: Dict[str, float]) -> Optional[GradientUpdate]:
         """Agent computes gradients on its local data"""
         if agent_id not in self.agents:
             return None
@@ -91,7 +91,7 @@ class FederatedLearner:
             return {}
 
         # Weighted average of gradients
-        aggregated = defaultdict(float)
+        aggregated: Dict[str, float] = defaultdict(float)
         total_weight = sum(u.weight for u in gradient_updates)
 
         for update in gradient_updates:
