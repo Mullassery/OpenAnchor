@@ -1,12 +1,11 @@
 """Tests for model evolution module"""
 
-import pytest
 from openanchor.model_evolution import (
+    AdaptiveHyperparameterTuner,
+    GridSearchOptimizer,
     ModelCheckpoint,
     ModelEvolutionTracker,
-    AdaptiveHyperparameterTuner,
     ModelSelector,
-    GridSearchOptimizer,
 )
 
 
@@ -80,6 +79,7 @@ class TestAdaptiveHyperparameterTuner:
         tuner.apply_suggestion(suggestion)
 
         assert tuner.current_params["learning_rate"] == 0.005
+        assert tuner.current_params["learning_rate"] != old_lr
         assert len(tuner.tuning_history) == 1
 
 
@@ -181,6 +181,7 @@ class TestModelEvolutionIntegration:
         suggestions = tuner.get_suggestions(tracker)
         best = selector.select_best()
 
+        assert isinstance(suggestions, list)
         assert tracker.best_checkpoint is not None
         assert best is not None
         assert best[1].accuracy > 0.8

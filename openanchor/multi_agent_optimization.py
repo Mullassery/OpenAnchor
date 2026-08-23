@@ -4,10 +4,10 @@ OpenAnchor Phase 3: Enable multiple agents to share knowledge, coordinate optimi
 efforts, and learn collaboratively from each other's experiences.
 """
 
-from dataclasses import dataclass, field
-from typing import List, Dict, Set, Optional, Tuple
 import hashlib
 from collections import defaultdict
+from dataclasses import dataclass, field
+from typing import Dict, List, Set, Tuple
 
 
 @dataclass

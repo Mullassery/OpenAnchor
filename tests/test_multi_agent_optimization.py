@@ -1,11 +1,12 @@
 """Tests for multi-agent optimization module"""
 
 import pytest
+
 from openanchor.multi_agent_optimization import (
-    MultiAgentCoordinator,
     AgentProfile,
+    FleetOptimizationEngine,
+    MultiAgentCoordinator,
     SharedKnowledge,
-    FleetOptimizationEngine
 )
 
 

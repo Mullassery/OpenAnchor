@@ -1,12 +1,11 @@
 """Tests for federated learning module"""
 
-import pytest
 from openanchor.federated_learning import (
-    FederatedLearner,
-    LocalModel,
-    GradientUpdate,
     AggregatedModel,
-    FederatedOptimizer
+    FederatedLearner,
+    FederatedOptimizer,
+    GradientUpdate,
+    LocalModel,
 )
 
 

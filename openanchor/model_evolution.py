@@ -4,9 +4,8 @@ Track model performance over time, evolve hyperparameters adaptively,
 and select best-performing models for deployment.
 """
 
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Tuple
-import math
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple
 
 
 @dataclass

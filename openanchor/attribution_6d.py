@@ -1,10 +1,10 @@
 """6D Attribution Model - Analyze LLM requests across 6 dimensions: tokens, latency, cost, quality, model, and phase."""
 
+import statistics
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Tuple, Optional
 from enum import Enum
-import statistics
+from typing import Dict, List, Optional, Tuple
 
 
 class Quality(Enum):

@@ -4,10 +4,9 @@ OpenAnchor Phase 4: Enable agents to learn from each other without centralizing 
 Each agent maintains local models and shares gradient updates, not raw data.
 """
 
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Tuple
-import hashlib
 from collections import defaultdict
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple
 
 
 @dataclass
@@ -162,7 +161,7 @@ class FederatedLearner:
 
         # Lower variance = better convergence
         avg_loss = sum(recent_losses) / len(recent_losses)
-        variance = sum((l - avg_loss) ** 2 for l in recent_losses) / len(recent_losses)
+        variance = sum((loss - avg_loss) ** 2 for loss in recent_losses) / len(recent_losses)
 
         # Convert variance to convergence score (0-1)
         convergence = max(0.0, 1.0 - variance)

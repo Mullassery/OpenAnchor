@@ -1,8 +1,6 @@
 """Tests for 6D attribution model."""
 
-import pytest
-from openanchor.attribution_6d import Attribution6D, Attribution6DAnalyzer, Quality
-from datetime import datetime
+from openanchor.attribution_6d import Attribution6D, Attribution6DAnalyzer
 
 
 class TestAttribution6D:
