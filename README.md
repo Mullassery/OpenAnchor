@@ -223,5 +223,4 @@ attribution analyzer, and the federated-learning / multi-agent-optimization
 
 ## License
 
-Proprietary License — free to use with explicit attribution. See
-[LICENSE](LICENSE).
+This project is licensed under the [Apache License 2.0](LICENSE).
