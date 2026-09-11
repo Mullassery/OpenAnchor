@@ -13,7 +13,7 @@ real semantic-caching layer, both backed by actual embeddings and storage
 [![PyPI](https://img.shields.io/pypi/v/openanchor)](https://pypi.org/project/openanchor)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue)](https://www.python.org)
 [![Tests: 248 Passing](https://img.shields.io/badge/tests-248%20passing-success)](./tests)
-[![License: Proprietary (free w/ attribution)](https://img.shields.io/badge/License-Proprietary-blue.svg)](./LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
 ---
 
