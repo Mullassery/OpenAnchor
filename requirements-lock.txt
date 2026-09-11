@@ -12,7 +12,7 @@
 # unused; they're now genuinely wired into openanchor/otel.py.
 
 pydantic>=2.0,<3.0
-pytokencalc>=0.7.0,<1.0
+pytokencalc>=0.7.0,<2.0
 requests>=2.31.0,<3.0
 
 # Observability (openanchor/otel.py — real span export for capture_event)
