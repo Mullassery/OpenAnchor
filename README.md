@@ -57,6 +57,19 @@ runnable examples.
 
 ---
 
+## Use cases
+
+- **Attributing LLM cost/token spend across sessions, models, and prompt
+  templates** in an existing app, without switching LLM providers.
+- **Wrapping a LangChain chain** to capture usage transparently via
+  `OpenAnchorMiddleware`.
+- **Reducing repeat-call cost with real semantic caching**, backed by
+  actual embeddings and storage.
+- **Not yet a good fit for:** framework-agnostic drop-in wrapping across
+  Cursor/Claude Code/Codex CLI/Deep Agents — that broader pitch exists
+  only in `planning/` as an earlier, aspirational design, not the current
+  shipped API (LangChain middleware + a direct collector API today).
+
 ## What's actually implemented
 
 | Capability | Status |

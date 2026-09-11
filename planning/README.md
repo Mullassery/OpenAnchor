@@ -1,5 +1,11 @@
 # OpenAnchor: Cost-Optimization Middleware for Agent Frameworks
 
+> **Historical planning document — describes an earlier, aspirational
+> pitch (`CostOptimizer`/`optimizer.wrap()`, "60% cheaper"), not the
+> current shipped API.** For the real, current API and verified status
+> see [`../../README.md`](../../README.md) (`TokenCollector`/`Analytics`/
+> `AttributionModel`/`OpenAnchorMiddleware`). Kept for reference only.
+
 **OpenAnchor** is an open-source middleware layer that automatically optimizes LLM costs for any agent framework — Cursor, Claude Code, Codex CLI, LangChain, Deep Agents, or custom agents.
 
 **One-line pitch:** "Add OpenAnchor to your agent. Same workflow. 60% cheaper."
