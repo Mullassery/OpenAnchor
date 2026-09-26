@@ -350,5 +350,48 @@ class TestWrappedRunnableInvoke:
             middleware("not a runnable")
 
 
+def _ollama_reachable() -> bool:
+    try:
+        import requests
+
+        return requests.get("http://localhost:11434/api/tags", timeout=1).status_code == 200
+    except Exception:
+        return False
+
+
+try:
+    from langchain_ollama import ChatOllama
+
+    _HAS_LANGCHAIN_OLLAMA = True
+except ImportError:
+    _HAS_LANGCHAIN_OLLAMA = False
+
+
+@pytest.mark.skipif(
+    not (_HAS_LANGCHAIN_OLLAMA and _ollama_reachable()),
+    reason="requires langchain-ollama and a running local Ollama server",
+)
+class TestWrappedRunnableRealLangChainCall:
+    """Regression test for a real bug (found via live benchmarking against
+    an actual Ollama-backed ChatOllama call, not the _FakeRunnable stand-in
+    above): modern LangChain reports usage via the message's
+    `usage_metadata` attribute, not response_metadata["usage"] — so every
+    real call was silently captured as 0 input/output tokens."""
+
+    def test_invoke_captures_real_nonzero_token_usage(self):
+        middleware = OpenAnchorMiddleware(project_name="test_real_ollama")
+        llm = ChatOllama(model="qwen2.5:0.5b", base_url="http://localhost:11434")
+        wrapped = middleware(llm)
+
+        wrapped.invoke("Say the single word: banana")
+
+        stats = middleware.get_session_stats()
+        assert stats["total_calls"] == 1
+        assert stats["total_tokens"] > 0, (
+            "expected nonzero real token usage from a live LangChain call; "
+            "got 0, which means the usage_metadata extraction regressed"
+        )
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

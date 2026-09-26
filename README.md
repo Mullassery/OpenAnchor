@@ -84,6 +84,51 @@ runnable examples.
 
 ---
 
+## vs Helicone
+
+Helicone is the closest OSS reference point for LLM usage observability, though
+its architecture is different: Helicone is a **proxy/async-logging platform**
+(a 5-service stack — Web, Worker, Jawn, Supabase/Postgres, ClickHouse, Minio —
+that sits in front of or beside your provider calls), while OpenAnchor is an
+**in-process SDK middleware** (wraps a LangChain runnable directly, no network
+hop, no separate services to run). That architectural difference is the real
+story, more than any single number below.
+
+Measured 2026-09-22, real calls through a local Ollama server
+(`qwen2.5:0.5b`, `http://localhost:11434`) — genuine local inference, not a
+cloud API and not fabricated numbers. Standing up Helicone's full self-hosted
+stack (Postgres + ClickHouse + multiple workers) was out of scope for this
+pass, so its overhead is Helicone's own **published** number, clearly marked
+as secondary-sourced, not independently re-measured here:
+
+| | OpenAnchor (LangChain middleware) | Helicone |
+|---|---|---|
+| Integration shape | In-process wrapper around a LangChain runnable | Proxy (Cloudflare Workers or self-hosted Rust AI Gateway) or async OpenLLMetry logging |
+| Overhead per call | **~0.01ms median** (p95 0.013ms), isolated bookkeeping cost measured directly — [live-tested] | **~10ms** on Cloudflare Workers, **~1–5ms P95** on their newer Rust AI Gateway, per Helicone's own docs — [secondary-sourced, not re-measured] |
+| Why the gap | No network hop — it's a function call in the same process | Proxy mode adds a real network round-trip; async-logging mode is non-blocking but still ships events over the network |
+| End-to-end effect | Unmeasurable against real inference latency (546ms median for this local model; negligible fraction of even a fast cloud call) | Helicone's own docs call this "0.5–3% of a 500ms–5s request" |
+| Self-hosting complexity | `pip install openanchor` — no extra services | Docker Compose stack (6 services) or Helm; project's own docs mark manual setup "Not Recommended" |
+| Token-count accuracy | Real bug found and fixed during this benchmark (see below) — now reads LangChain's real `usage_metadata` | N/A (Helicone reads usage from the provider response it proxies/logs) |
+
+**Bug found and fixed during this benchmark:** `WrappedRunnable.invoke()`
+(`openanchor/middleware/langchain.py`) only ever looked for token counts at
+`result.response_metadata["usage"]`. That key doesn't exist on real LangChain
+chat model responses — modern LangChain (all current chat integrations,
+verified here against a real `ChatOllama` call) reports usage via the
+message's standardized `usage_metadata` attribute instead. The practical
+effect: every real LangChain call captured through the middleware was
+silently recorded as **0 input tokens, 0 output tokens** — the "6D
+attribution" was attributing zero tokens for every real integration,
+even though `capture_llm_call()`'s manual-entry path (used by the existing
+unit tests) worked fine. Fixed to read `usage_metadata` first, with a
+`response_metadata["token_usage"]` fallback for older/non-standard
+integrations. Regression test:
+`tests/test_langchain_middleware.py::TestWrappedRunnableRealLangChainCall`
+(skipped automatically if Ollama isn't running locally). Full suite: 249/249
+passing (was 248, +1 for this test).
+
+---
+
 ## Observability (OpenTelemetry)
 
 Every `TokenCollector.capture_event` call is wrapped in a real OTEL span

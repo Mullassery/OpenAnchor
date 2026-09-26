@@ -106,17 +106,35 @@ class OpenAnchorMiddleware:
 
                     latency_ms = (time.time() - start_time) * 1000
 
-                    # Try to extract token counts from result metadata
+                    # Try to extract token counts from result metadata.
+                    # Modern LangChain (langchain-core >=0.2, all major
+                    # chat model integrations incl. ChatOllama/ChatOpenAI/
+                    # ChatAnthropic) reports usage via the message's
+                    # standardized `usage_metadata` attribute
+                    # ({"input_tokens", "output_tokens", "total_tokens"}),
+                    # not nested under response_metadata["usage"] — that
+                    # key doesn't exist on real responses, so the old code
+                    # here always captured 0/0 tokens for every real call.
+                    # response_metadata is kept as a fallback for older/
+                    # non-standard integrations that predate usage_metadata.
                     input_tokens = 0
                     output_tokens = 0
 
-                    if hasattr(result, "response_metadata"):
+                    usage_metadata = getattr(result, "usage_metadata", None)
+                    if isinstance(usage_metadata, dict):
+                        input_tokens = usage_metadata.get("input_tokens", 0)
+                        output_tokens = usage_metadata.get("output_tokens", 0)
+                    elif hasattr(result, "response_metadata"):
                         metadata = result.response_metadata
                         if isinstance(metadata, dict):
                             if "usage" in metadata:
                                 usage = metadata["usage"]
                                 input_tokens = usage.get("input_tokens", 0)
                                 output_tokens = usage.get("output_tokens", 0)
+                            elif "token_usage" in metadata:
+                                usage = metadata["token_usage"]
+                                input_tokens = usage.get("prompt_tokens", 0)
+                                output_tokens = usage.get("completion_tokens", 0)
 
                     # Capture event. Raw prompt/response text is only
                     # persisted if the middleware was explicitly
