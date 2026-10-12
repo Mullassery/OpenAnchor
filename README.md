@@ -1,6 +1,6 @@
 # OpenAnchor
 
-[![Grapify](https://img.shields.io/badge/Grapify-Code%20Scan-purple)](https://grapify.ai)
+[![Graphify](https://img.shields.io/badge/Graphify-knowledge%20graph-blue)](https://github.com/Graphify-Labs/graphify)
 
 **LLM token-attribution middleware: capture, attribute, and observe every LLM call — with real OpenTelemetry export and real semantic caching.**
 
