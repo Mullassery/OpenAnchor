@@ -1,25 +1,90 @@
 # OpenAnchor
 
-[![Graphify](https://img.shields.io/badge/Graphify-knowledge%20graph-blue)](https://github.com/Graphify-Labs/graphify)
+LLM token-attribution middleware — capture, attribute, and observe every LLM call, with real OpenTelemetry export and real semantic caching.
 
-**LLM token-attribution middleware: capture, attribute, and observe every LLM call — with real OpenTelemetry export and real semantic caching.**
-
-OpenAnchor sits alongside your LLM calls (via a LangChain middleware today,
-or by calling its collector API directly from any provider) and captures
-token consumption events, breaks them down across 6 dimensions (phase,
-operation type, prompt template, session, model, and pattern), and exposes
-that data through a query API. It also ships real OTEL span export and a
-real semantic-caching layer, both backed by actual embeddings and storage
-— not mocked stand-ins.
-
-[![PyPI](https://img.shields.io/pypi/v/openanchor)](https://pypi.org/project/openanchor)
+[![Tests](https://github.com/Mullassery/openanchor/actions/workflows/ci.yml/badge.svg)](https://github.com/Mullassery/openanchor/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/openanchor)](https://pypi.org/project/openanchor/)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue)](https://www.python.org)
-[![Tests: 248 Passing](https://img.shields.io/badge/tests-248%20passing-success)](./tests)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
----
+## What it is
 
-## 30-Second Start
+OpenAnchor is an in-process SDK that sits alongside your LLM calls — via a
+LangChain middleware today, or by calling its collector API directly from any
+provider — and captures token-consumption events. It breaks usage down across
+six dimensions (phase, operation type, prompt template, session, model, and
+pattern) and exposes that data through a query API.
+
+It also ships real OpenTelemetry span export and a real semantic-caching layer,
+both backed by actual embeddings and storage rather than mocked stand-ins.
+
+## Features / Highlights
+
+- **Token capture + 6D attribution** — phase, operation type, prompt template,
+  session, model, and pattern, via `TokenCollector` / `AttributionModel` /
+  `Analytics`.
+- **Storage** — in-memory and SQLite event stores (indexed, WAL,
+  connection-reused) with optional retention/TTL purging.
+- **LangChain middleware** — `OpenAnchorMiddleware` wraps a runnable and captures
+  usage transparently, reading real `usage_metadata`.
+- **OpenTelemetry export** — every `capture_event` is wrapped in a real OTEL span;
+  tracing is off by default and enabled via `configure_tracing(...)`.
+- **Semantic caching** — embedding-based cache with real cosine-similarity
+  search, SQLite storage, and hit-rate stats; 12 MCP tools
+  (`cache_prompt_embedding`, `find_cached_similar`, `analyze_cache_hit_rate`, ...).
+- **Cost governance** — `okf_*` token profiles, cost governance, and optimization
+  tracking.
+- **Privacy by default** — raw prompt/response capture is off by default (hash +
+  length only), and opt-in captures are redacted for common PII/secrets.
+- **Docker image** with a working entry point (`python -m openanchor`).
+
+## Who it's for / Use cases
+
+- **Attributing LLM cost/token spend** across sessions, models, and prompt
+  templates in an existing app, without switching providers.
+- **Wrapping a LangChain chain** to capture usage transparently via
+  `OpenAnchorMiddleware`.
+- **Reducing repeat-call cost** with real semantic caching.
+- **Tracking optimization impact** over time with the cost-governance and
+  token-profile modules.
+
+## What it is not
+
+- **Not a proxy or a hosted platform.** OpenAnchor is an in-process SDK with no
+  network hop and no separate services to run — unlike proxy/async-logging
+  platforms such as Helicone.
+- **Not framework-agnostic yet.** The shipped integration is the LangChain
+  middleware plus the direct collector API. The broader "drop-in across
+  Cursor/Claude Code/Codex CLI/Deep Agents" pitch exists only in `planning/` as
+  an earlier, aspirational design.
+- **Not a content logger by default.** Raw prompt/response text is not captured
+  unless you explicitly opt in.
+- **Not production-certified.** The project is classified Alpha; audit the
+  privacy and MCP-connector defaults before relying on it in regulated
+  environments.
+
+## Project status
+
+**Alpha (v0.6.1).** The collector/attribution/analytics core, storage, LangChain
+middleware, OTEL export, semantic caching, the MCP tools, and the cost-governance
+modules are implemented and tested. See [CHANGELOG.md](CHANGELOG.md) for release
+history and [docs/](docs/) for architecture and roadmap material.
+
+## Installation
+
+```bash
+pip install openanchor
+# with OTLP exporter support:
+pip install "openanchor[otel]"
+```
+
+Development install:
+
+```bash
+pip install -e ".[dev]"
+```
+
+## Quick start
 
 ```python
 from openanchor import TokenCollector, Analytics, AttributionModel
@@ -54,90 +119,12 @@ result = wrapped_chain.invoke({"model": "gpt-4", "prompt": "..."})
 print(middleware.get_session_stats())
 ```
 
-See `examples/basic_usage.py` and `examples/mcp_openanchor.py` for full
-runnable examples.
+Runnable examples live in `examples/basic_usage.py` and
+`examples/mcp_openanchor.py`.
 
----
+## Usage
 
-## Use cases
-
-- **Attributing LLM cost/token spend across sessions, models, and prompt
-  templates** in an existing app, without switching LLM providers.
-- **Wrapping a LangChain chain** to capture usage transparently via
-  `OpenAnchorMiddleware`.
-- **Reducing repeat-call cost with real semantic caching**, backed by
-  actual embeddings and storage.
-- **Not yet a good fit for:** framework-agnostic drop-in wrapping across
-  Cursor/Claude Code/Codex CLI/Deep Agents — that broader pitch exists
-  only in `planning/` as an earlier, aspirational design, not the current
-  shipped API (LangChain middleware + a direct collector API today).
-
-## What's actually implemented
-
-| Capability | Status |
-|---|---|
-| Token capture + 6D attribution (phase/operation/prompt/session/model) | Real, tested |
-| In-memory + SQLite event storage (indexed, WAL, connection-reused) | Real, tested |
-| LangChain middleware (`OpenAnchorMiddleware`, `WrappedRunnable`) | Real, tested |
-| OpenTelemetry span export (`openanchor.otel`) | Real, tested — see below |
-| Semantic caching (`openanchor.semantic_cache`, 12 MCP tools) | Real, tested — see below |
-| Cost governance / token profiles / optimization tracking (`okf_*`) | Real, tested |
-| Docker image with a working entry point | Real (`python -m openanchor`) |
-
----
-
-## vs Helicone
-
-Helicone is the closest OSS reference point for LLM usage observability, though
-its architecture is different: Helicone is a **proxy/async-logging platform**
-(a 5-service stack — Web, Worker, Jawn, Supabase/Postgres, ClickHouse, Minio —
-that sits in front of or beside your provider calls), while OpenAnchor is an
-**in-process SDK middleware** (wraps a LangChain runnable directly, no network
-hop, no separate services to run). That architectural difference is the real
-story, more than any single number below.
-
-Measured 2026-09-22, real calls through a local Ollama server
-(`qwen2.5:0.5b`, `http://localhost:11434`) — genuine local inference, not a
-cloud API and not fabricated numbers. Standing up Helicone's full self-hosted
-stack (Postgres + ClickHouse + multiple workers) was out of scope for this
-pass, so its overhead is Helicone's own **published** number, clearly marked
-as secondary-sourced, not independently re-measured here:
-
-| | OpenAnchor (LangChain middleware) | Helicone |
-|---|---|---|
-| Integration shape | In-process wrapper around a LangChain runnable | Proxy (Cloudflare Workers or self-hosted Rust AI Gateway) or async OpenLLMetry logging |
-| Overhead per call | **~0.01ms median** (p95 0.013ms), isolated bookkeeping cost measured directly — [live-tested] | **~10ms** on Cloudflare Workers, **~1–5ms P95** on their newer Rust AI Gateway, per Helicone's own docs — [secondary-sourced, not re-measured] |
-| Why the gap | No network hop — it's a function call in the same process | Proxy mode adds a real network round-trip; async-logging mode is non-blocking but still ships events over the network |
-| End-to-end effect | Unmeasurable against real inference latency (546ms median for this local model; negligible fraction of even a fast cloud call) | Helicone's own docs call this "0.5–3% of a 500ms–5s request" |
-| Self-hosting complexity | `pip install openanchor` — no extra services | Docker Compose stack (6 services) or Helm; project's own docs mark manual setup "Not Recommended" |
-| Token-count accuracy | Real bug found and fixed during this benchmark (see below) — now reads LangChain's real `usage_metadata` | N/A (Helicone reads usage from the provider response it proxies/logs) |
-
-**Bug found and fixed during this benchmark:** `WrappedRunnable.invoke()`
-(`openanchor/middleware/langchain.py`) only ever looked for token counts at
-`result.response_metadata["usage"]`. That key doesn't exist on real LangChain
-chat model responses — modern LangChain (all current chat integrations,
-verified here against a real `ChatOllama` call) reports usage via the
-message's standardized `usage_metadata` attribute instead. The practical
-effect: every real LangChain call captured through the middleware was
-silently recorded as **0 input tokens, 0 output tokens** — the "6D
-attribution" was attributing zero tokens for every real integration,
-even though `capture_llm_call()`'s manual-entry path (used by the existing
-unit tests) worked fine. Fixed to read `usage_metadata` first, with a
-`response_metadata["token_usage"]` fallback for older/non-standard
-integrations. Regression test:
-`tests/test_langchain_middleware.py::TestWrappedRunnableRealLangChainCall`
-(skipped automatically if Ollama isn't running locally). Full suite: 249/249
-passing (was 248, +1 for this test).
-
----
-
-## Observability (OpenTelemetry)
-
-Every `TokenCollector.capture_event` call is wrapped in a real OTEL span
-(token counts, model, provider, operation type, and cost-if-provided as
-span attributes) — not a mocked stand-in. Tracing is **off by default**
-(the collector's hot path shouldn't pay tracing overhead or make network
-calls unless asked to):
+Enable OpenTelemetry tracing:
 
 ```python
 from openanchor import configure_tracing
@@ -146,24 +133,7 @@ configure_tracing(exporter="console")  # safe default, no network calls
 # or: configure_tracing(exporter="otlp", otlp_endpoint="http://localhost:4318/v1/traces")
 ```
 
-Full details, env-var-only configuration, and the span attribute reference:
-[`OTEL_SETUP_GUIDE.md`](OTEL_SETUP_GUIDE.md). Tests use OTEL's in-memory
-span exporter (`tests/test_otel.py`) to verify real spans are produced.
-
----
-
-## Semantic caching
-
-`openanchor.semantic_cache` implements real embedding-based caching:
-
-- **Embeddings**: uses a local Ollama server (`nomic-embed-text` or similar)
-  when reachable at `localhost:11434`, and automatically falls back to a
-  deterministic, dependency-free feature-hashing embedder when it isn't —
-  so the cache always works, online or offline.
-- **Storage**: SQLite-backed (`SemanticCacheStore`), storing embeddings +
-  responses + real lookup history (for real hit-rate stats, not hardcoded
-  numbers).
-- **Lookup**: real cosine-similarity search, not string matching.
+Semantic caching:
 
 ```python
 from openanchor import SemanticCache
@@ -176,41 +146,7 @@ await handler.cache_prompt_embedding("Summarize this report", response="...")
 matches = await handler.find_cached_similar("Summarize this report for me")
 ```
 
-All 12 MCP tools (`cache_prompt_embedding`, `find_cached_similar`,
-`analyze_cache_hit_rate`, `get_cache_statistics`, etc) compute real numbers
-from actual cache contents and lookup history — see
-`openanchor/_mcp_tools.py`. Tests: `tests/test_semantic_cache.py`,
-`tests/test_mcp_tools.py`.
-
-### MCP connector security
-
-If you expose these tools over a network port via
-`SemanticCache.start_mcp_connector()`, the defaults are deliberately
-locked down: binds to `127.0.0.1` (not `0.0.0.0`), no CORS origins allowed
-(not `*`), and least-privilege read-only permissions (not wildcard
-actions/roles). Widening any of that requires explicit opt-in — see
-`openanchor/_mcp_connector.py` and `PRODUCTION_DEPLOYMENT.md`.
-
----
-
-## Privacy
-
-OpenAnchor's job is intercepting and storing metadata about LLM calls, so
-its privacy posture matters:
-
-- **Raw prompt/response text capture is off by default.** The LangChain
-  middleware's `WrappedRunnable.invoke()` records only a SHA-256 hash and
-  length of the input/output by default — never the actual text — unless
-  you construct `OpenAnchorMiddleware(capture_raw_content=True)`.
-- **Opt-in captures are redacted by default.** When raw capture is
-  enabled, excerpts are run through best-effort PII/secret redaction
-  (emails, phone numbers, API keys, credit-card-like numbers, SSNs) before
-  being stored, unless you explicitly disable that with
-  `redact_captured_content=False`.
-- **Retention/TTL.** `SqliteEventStore(retention_days=N)` automatically
-  purges events older than the retention window (in addition to the
-  existing manual `.clear()`), so persisted call data doesn't accumulate
-  indefinitely once a retention policy is configured.
+Privacy controls:
 
 ```python
 from openanchor import SqliteEventStore
@@ -225,21 +161,7 @@ middleware = OpenAnchorMiddleware(
 )
 ```
 
-See `openanchor/privacy.py` and `tests/test_privacy.py`.
-
----
-
-## Installation
-
-```bash
-pip install openanchor
-# with OTLP exporter support:
-pip install "openanchor[otel]"
-```
-
----
-
-## Docker
+Docker:
 
 ```bash
 docker build -t openanchor .
@@ -247,21 +169,19 @@ docker run -p 8080:8080 openanchor
 curl http://localhost:8080/health
 ```
 
-See `PRODUCTION_DEPLOYMENT.md` for details.
-
----
-
 ## Documentation
 
-- [Production Deployment](PRODUCTION_DEPLOYMENT.md)
-- [OTEL Setup Guide](OTEL_SETUP_GUIDE.md)
-- [Quickstart](QUICKSTART.md)
-- [Changelog](CHANGELOG.md)
-- [Examples](examples/)
+- [QUICKSTART.md](QUICKSTART.md) — the fastest path to a working capture.
+- [OTEL_SETUP_GUIDE.md](OTEL_SETUP_GUIDE.md) — tracing config, env-var-only
+  setup, and the span attribute reference.
+- [PRODUCTION_DEPLOYMENT.md](PRODUCTION_DEPLOYMENT.md) — deployment and MCP
+  connector security defaults.
+- [CHANGELOG.md](CHANGELOG.md) — release history.
+- [examples/](examples/) — runnable examples.
 
----
+## Contributing
 
-## Testing
+Contributions are welcome. Run the same checks CI runs:
 
 ```bash
 pip install -e ".[dev]"
@@ -271,15 +191,15 @@ mypy openanchor/
 bandit --ini .bandit -r openanchor/
 ```
 
-248 tests across 14 test files, covering the collector/attribution/analytics
-core, the LangChain middleware (including the token-capture hot path),
-SQLite and in-memory storage, OTEL span export, semantic caching, the MCP
-connector's security defaults, the OKF cost-governance/token-profile/
-optimization-tracking modules, the `__main__` CLI entry point, the 6D
-attribution analyzer, and the federated-learning / multi-agent-optimization
-/ model-evolution modules.
+## Related projects
 
----
+- [PyAPICheck](https://github.com/Mullassery/PyAPICheck) — API security discovery with cited risk scores
+- [PyBeamGuard](https://github.com/Mullassery/PyBeamGuard) — Apache Beam and Dataflow pipeline analysis
+- [PyNetworkIntel](https://github.com/Mullassery/PyNetworkIntel) — network discovery and anomaly detection
+- [OpenAnchor](https://github.com/Mullassery/OpenAnchor) — LLM token-usage intelligence middleware
+- [PyAgentHound](https://github.com/Mullassery/PyAgentHound) — trace, detect, and explain AI agent failures
+- [PyVectorHound](https://github.com/Mullassery/PyVectorHound) — diagnose RAG retrieval failures
+- [Browse all projects](https://github.com/Mullassery?tab=repositories)
 
 ## License
 
