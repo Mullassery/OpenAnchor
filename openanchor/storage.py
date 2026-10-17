@@ -4,7 +4,7 @@ import json
 import sqlite3
 import threading
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -218,7 +218,7 @@ class SqliteEventStore:
         """
         if self.retention_days is None:
             return 0
-        cutoff = (datetime.utcnow() - timedelta(days=self.retention_days)).isoformat()
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=self.retention_days)).isoformat()
         with self._lock:
             cursor = self._conn.execute(
                 "SELECT COUNT(*) as c FROM token_events WHERE timestamp < ?", (cutoff,)

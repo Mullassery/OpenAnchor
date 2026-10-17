@@ -2,7 +2,7 @@
 
 import statistics
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
@@ -40,7 +40,7 @@ class Attribution6D:
     # Dimension 6: Phase/Operation
     operation: str
 
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     session_id: Optional[str] = None
     success: bool = True
 
