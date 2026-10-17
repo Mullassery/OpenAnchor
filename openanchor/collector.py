@@ -1,7 +1,7 @@
 """Token collection and event capture."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from .models import (
@@ -97,7 +97,7 @@ class TokenCollector:
         with start_span("openanchor.capture_event", attributes=span_attributes):
             event = TokenEvent(
                 call_id=call_id,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(timezone.utc),
                 phase=phase,
                 operation_type=operation_type,
                 prompt_template=prompt_template,
