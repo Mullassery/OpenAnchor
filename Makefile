@@ -38,9 +38,9 @@ format:
 
 security:
 	@echo "Running bandit..."
-	bandit -r openanchor -f json -o bandit-report.json || true
+	bandit -r openanchor -f json -o bandit-report.json
 	@echo "Running safety..."
-	safety check --json || true
+	safety check --json
 
 clean:
 	rm -rf build/ dist/ *.egg-info/

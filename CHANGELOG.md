@@ -1,5 +1,10 @@
 # OpenAnchor Changelog
 
+## [0.6.2] - 2026-10-17
+
+### Fixed
+- Audit remediation: security hardening, correctness fixes, and lint/CI gates.
+
 ## v0.6.1 — 2026-08-23
 
 ### CI fixes and real bugs found along the way
