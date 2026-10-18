@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "outputs": {
+    "md": [
+      "openanchor.3.md",
+      "overview.md",
+      "tools.7.md"
+    ],
+    "html": [
+      "openanchor.3.html",
+      "overview.html",
+      "tools.7.html"
+    ]
+  }
+}
