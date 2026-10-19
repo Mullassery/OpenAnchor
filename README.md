@@ -179,6 +179,16 @@ curl http://localhost:8080/health
 - [CHANGELOG.md](CHANGELOG.md) — release history.
 - [examples/](examples/) — runnable examples.
 
+## Known issues and deferred work
+
+**Blocked / failed:**
+- OTel/OpenInference auto-instrumentation and more framework adapters.
+
+**Rejected / deferred:**
+- A dashboard; export to Langfuse/Phoenix/Helicone.
+
+Full shipped/blocked/rejected detail: [`QUEUE_STATUS.md`](QUEUE_STATUS.md).
+
 ## Queue status
 
 Shipped, blocked/failed, and rejected work for this repository is documented in
