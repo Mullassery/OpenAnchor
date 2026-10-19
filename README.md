@@ -70,6 +70,31 @@ middleware, OTEL export, semantic caching, the MCP tools, and the cost-governanc
 modules are implemented and tested. See [CHANGELOG.md](CHANGELOG.md) for release
 history and [docs/](docs/) for architecture and roadmap material.
 
+## Auto-instrumentation
+
+Bridge OpenLLMetry/OpenInference instrumentors into OpenAnchor without changing
+your application code:
+
+```bash
+pip install "openanchor[auto-instrument]"
+```
+
+```python
+from openanchor import TokenCollector, enable_auto_instrumentation
+
+collector = TokenCollector()
+enable_auto_instrumentation(collector)  # enables every installed instrumentor
+
+# Any OpenAI/Anthropic/LangChain call now produces a TokenEvent automatically.
+print(collector.get_all_events())
+```
+
+The adapter maps `gen_ai.usage.*` / `llm.token_count.*` attributes, model,
+provider, session and latency into OpenAnchor's existing event model. It skips
+OpenAnchor's own spans to prevent recursion and deduplicates by trace/span id.
+If no instrumentor is installed it raises `InstrumentationUnavailable` rather
+than silently doing nothing.
+
 ## Installation
 
 ```bash

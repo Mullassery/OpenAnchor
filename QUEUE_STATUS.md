@@ -3,10 +3,10 @@
 This file records what was shipped, what is blocked/failed, and what is rejected for this repository. It complements `AUDIT_FINDINGS.md`.
 
 ## Shipped
-- No code changes; audit/bundle docs added.
+- OTel/OpenInference auto-instrumentation (`OpenAnchorSpanProcessor`, `enable_auto_instrumentation`, `[auto-instrument]` extra); audit/bundle docs added.
 
 ## Blocked / failed
-- OTel/OpenInference auto-instrumentation and more framework adapters.
+- More framework adapters beyond the OpenLLMetry instrumentors.
 
 ## Rejected / deferred
 - A dashboard; export to Langfuse/Phoenix/Helicone.

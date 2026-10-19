@@ -35,6 +35,11 @@ from .attribution import AttributionModel
 
 # Collection and storage
 from .collector import TokenCollector
+from .instrumentation import (
+    InstrumentationUnavailable,
+    OpenAnchorSpanProcessor,
+    enable_auto_instrumentation,
+)
 from .models import (
     Attribution,
     OperationType,
@@ -68,6 +73,17 @@ from .okf_token_profiles import (
 # Observability (OTEL) — see openanchor/otel.py
 from .otel import configure_tracing, is_otel_available
 
+# LLM providers — see openanchor/providers/llm.py
+from .providers import (
+    LLMProvider,
+    LLMProviderRegistry,
+    LLMResponse,
+    OpenRouterProvider,
+    default_provider,
+    get_default_provider,
+    set_default_provider,
+)
+
 # Semantic caching primitives — see openanchor/semantic_cache.py
 from .semantic_cache import (
     EmbeddingProvider,
@@ -79,7 +95,7 @@ from .storage import EventStore, SqliteEventStore
 
 __version__ = "0.6.2"
 __author__ = "Georgi Mammen Mullassery"
-__license__ = "Proprietary"
+__license__ = "Apache-2.0"
 
 __all__ = [
     # Models
@@ -91,6 +107,9 @@ __all__ = [
     "RequestPhase",
     # Collection/Storage
     "TokenCollector",
+    "OpenAnchorSpanProcessor",
+    "enable_auto_instrumentation",
+    "InstrumentationUnavailable",
     "EventStore",
     "SqliteEventStore",
     # Analysis
@@ -117,6 +136,14 @@ __all__ = [
     "OllamaEmbeddingProvider",
     "HashingEmbeddingProvider",
     "SemanticCache",
+    # LLM providers
+    "LLMProvider",
+    "LLMResponse",
+    "OpenRouterProvider",
+    "LLMProviderRegistry",
+    "default_provider",
+    "set_default_provider",
+    "get_default_provider",
 ]
 
 # MCP 2.0 Support (v0.1.3+)
