@@ -179,6 +179,11 @@ curl http://localhost:8080/health
 - [CHANGELOG.md](CHANGELOG.md) — release history.
 - [examples/](examples/) — runnable examples.
 
+## Queue status
+
+Shipped, blocked/failed, and rejected work for this repository is documented in
+[`QUEUE_STATUS.md`](QUEUE_STATUS.md).
+
 ## Contributing
 
 Contributions are welcome. Run the same checks CI runs:
