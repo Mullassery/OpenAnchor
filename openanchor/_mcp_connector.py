@@ -12,7 +12,7 @@ from .semantic_cache import EmbeddingProvider, SemanticCacheStore
 logger = logging.getLogger(__name__)
 
 try:
-    from statguardian._mcp_connector import BaseMCPConnector  # type: ignore[import-not-found]
+    from statguardian import BaseMCPConnector  # type: ignore[import-not-found]
 except ImportError:
     class BaseMCPConnector(ABC):  # type: ignore[no-redef]
         def __init__(self, project_name: str, port: int = 8765, host: str = "127.0.0.1"):
