@@ -93,7 +93,7 @@ from .semantic_cache import (
 )
 from .storage import EventStore, SqliteEventStore
 
-__version__ = "0.6.2"
+__version__ = "0.6.3"
 __author__ = "Georgi Mammen Mullassery"
 __license__ = "Apache-2.0"
 

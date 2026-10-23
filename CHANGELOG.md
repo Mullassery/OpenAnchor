@@ -1,5 +1,10 @@
 # OpenAnchor Changelog
 
+## [0.6.3] - 2026-10-23
+
+### Fixed
+- Fixed the MCP connector to import `BaseMCPConnector` from the public `statguardian` API.
+
 ## [0.6.2] - 2026-10-17
 
 ### Fixed
