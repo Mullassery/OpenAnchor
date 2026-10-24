@@ -56,7 +56,9 @@ starts, and record the decision in the PR or changelog.
 
 ## OSS gap analysis — 2026-10-24
 
-**Scope.** Covers OpenAnchor v0.6.3 as implemented here: capture, six-dimension
+**What matters most here:** instrumentation breadth and a trace workflow. More framework/provider coverage gets the data in; a trace explorer, evaluation, and prompt workflow is what keeps teams from pairing OpenAnchor with Langfuse or Phoenix.
+
+Scope: Covers OpenAnchor v0.6.3 as implemented here: capture, six-dimension
 attribution, SQLite/in-memory stores, LangChain middleware, opt-in OTEL spans,
 semantic cache, `okf_*` governance, and MCP tools. Hosted SaaS is excluded unless
 its core is OSS. Claims come from this repository and the sources below.
