@@ -212,7 +212,7 @@ curl http://localhost:8080/health
 **Rejected / deferred:**
 - A dashboard; export to Langfuse/Phoenix/Helicone.
 
-Full shipped/blocked/rejected detail: [`QUEUE_STATUS.md`](QUEUE_STATUS.md).
+Full shipped/blocked/rejected detail: [`docs/internal/QUEUE_STATUS.md`](docs/internal/QUEUE_STATUS.md).
 
 ## Contributing
 

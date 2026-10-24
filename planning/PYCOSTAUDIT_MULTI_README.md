@@ -480,7 +480,7 @@ Contributions welcome! Areas:
 - [ ] Enhance dashboard UI
 - [ ] Better recommendations
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for details.
 
 ---
 
@@ -524,7 +524,7 @@ A: Yes, CSV/JSON/Parquet exports available for BI/accounting tools.
 
 ## License
 
-MIT License. See [LICENSE](./LICENSE) for details.
+MIT License. See [LICENSE](../LICENSE) for details.
 
 ---
 
