@@ -199,6 +199,9 @@ curl http://localhost:8080/health
 - [QUICKSTART.md](QUICKSTART.md) — the fastest path to a working capture.
 - [OTEL_SETUP_GUIDE.md](OTEL_SETUP_GUIDE.md) — tracing config, env-var-only
   setup, and the span attribute reference.
+- [docs/MCP_TOOLS.md](docs/MCP_TOOLS.md) — reference for all 12 MCP tools
+- [docs/INTEGRATION_GUIDE.md](docs/INTEGRATION_GUIDE.md) — integration and deployment flow
+- [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) — common failures and diagnosis
 - [PRODUCTION_DEPLOYMENT.md](PRODUCTION_DEPLOYMENT.md) — deployment and MCP
   connector security defaults.
 - [CHANGELOG.md](CHANGELOG.md) — release history.

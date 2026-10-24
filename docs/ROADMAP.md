@@ -14,16 +14,16 @@ None - v2.0.0 production-ready
 ### 🔴 HIGH (Before Q3 Release)
 
 #### Testing & Quality
-- [ ] Add MCP-specific unit tests (50-100 lines per project)
+- [x] Add MCP-specific unit tests (`tests/test_mcp_tools.py`, `tests/test_mcp_connector.py`; 251 tests pass)
 - [ ] Coverage target: >80% for MCP tools
 - [ ] Integration tests with other projects
-- [ ] Performance benchmarking (latency/throughput)
+- [x] Performance benchmarking (`scripts/benchmark_mcp_tools.py`, ~734 lookups/sec on the reference run)
 
 #### Documentation
-- [ ] Add MCP tool examples (examples/mcp_*.py)
-- [ ] API documentation for each tool
-- [ ] Integration guide for dependent projects
-- [ ] Troubleshooting guide
+- [x] Add MCP tool examples (`examples/mcp_openanchor.py`)
+- [x] API documentation for each tool (`docs/MCP_TOOLS.md`)
+- [x] Integration guide for dependent projects (`docs/INTEGRATION_GUIDE.md`)
+- [x] Troubleshooting guide (`docs/TROUBLESHOOTING.md`)
 
 #### Performance
 - [ ] Optimize hot paths (profile + identify 20% taking 80%)
