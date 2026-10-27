@@ -1,0 +1,118 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["pytokencalc", "pytokencalc.*"]
+
+[project]
+name = "pytokencalc"
+version = "1.5.0"
+description = "Universal token counting for ANY LLM with embedded StatGuardian quality validation: 8 cloud providers, 7 local inference engines, custom/proprietary models, and BYOM (Bring Your Own Model). Pattern-based forward-compatibility, model discovery, and platform-aware tracking."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "Apache-2.0"
+authors = [{ name = "Georgi Mammen Mullassery", email = "mullassery@gmail.com" }]
+maintainers = [{ name = "Georgi Mammen Mullassery", email = "mullassery@gmail.com" }]
+keywords = [
+    "llm",
+    "token-counting",
+    "tokenizer",
+    "multi-provider",
+    "gpt",
+    "claude",
+    "gemini",
+    "llama",
+    "mistral",
+    "groq",
+    "deepinfra",
+    "token-counter",
+    "transformer",
+    "tiktoken"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+]
+
+dependencies = []
+
+[project.optional-dependencies]
+# Local tokenizers (Phase 1) - for token counting support
+mcp = ["fastmcp>=2.0"]
+server = ["flask>=2.0"]
+tokenizers = [
+    "tiktoken>=0.5.0",  # OpenAI GPT token counting
+    "transformers>=4.30.0",  # Llama, Mistral, 1000+ models
+    "sentencepiece>=0.1.99",  # SentencePiece dependency for HF models
+]
+
+# Quality validation with StatGuardian (v1.0.0)
+quality = [
+    "pyyaml>=6.0",  # For quality contract YAML loading
+]
+
+# Development and testing
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "hypothesis>=6.100",  # property-based tokenizer boundary tests (RECHECK-016)
+]
+
+[project.urls]
+Homepage = "https://github.com/Mullassery/PyTokenCalc"
+Repository = "https://github.com/Mullassery/PyTokenCalc"
+"Bug Tracker" = "https://github.com/Mullassery/PyTokenCalc/issues"
+Documentation = "https://github.com/Mullassery/PyTokenCalc#readme"
+Changelog = "https://github.com/Mullassery/PyTokenCalc/releases"
+"Source Code" = "https://github.com/Mullassery/PyTokenCalc/tree/main"
+Discussions = "https://github.com/Mullassery/PyTokenCalc/discussions"
+
+[tool.black]
+line-length = 100
+target-version = ["py39", "py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+# Curated rule selection (2026-10-11). Deliberately explicit rather than
+# relying on ruff's implicit default, which grows between releases and can
+# silently add new failing rules on upgrade. `ruff check .` is clean against
+# exactly this set and runs in CI (see .github/workflows/ci.yml).
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes (unused imports/vars, undefined names)
+    "W",   # pycodestyle warnings
+    "I",   # isort (import ordering)
+    "B",   # flake8-bugbear (likely bugs / design problems)
+    "C4",  # flake8-comprehensions
+    "PIE", # flake8-pie
+    "SIM", # flake8-simplify
+]
+ignore = [
+    # Formatting is owned by black (line-length = 100 above); enforcing
+    # E501 here too would just duplicate the formatter's job.
+    "E501",
+]
+
+[project.scripts]
+pytokencalc = "pytokencalc.cli:main"
+pycount = "pytokencalc.quick_cli:main"
+pytokencalc-mcp = "pytokencalc.mcp_server:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
