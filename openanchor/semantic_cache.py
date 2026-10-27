@@ -23,6 +23,7 @@ hashing embedder otherwise, so the cache is always fully functional.
 from __future__ import annotations
 
 import hashlib
+import ipaddress
 import json
 import logging
 import math
@@ -34,6 +35,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -69,17 +71,51 @@ class OllamaEmbeddingProvider(EmbeddingProvider):
     model pulled, e.g. ``ollama pull nomic-embed-text``.
     """
 
+    _ALLOWED_SCHEMES = {"http", "https"}
+    _ALLOWED_HOSTS = {"localhost", "127.0.0.1", "::1"}
+
+
     def __init__(
         self,
         model: str = "nomic-embed-text",
         host: str = "http://localhost:11434",
         timeout: float = 10.0,
         dimension: int = 768,
+        allow_remote: bool = False,
     ):
         self.model = model
-        self.host = host.rstrip("/")
+        self.host = self._validate_host(host.rstrip("/"), allow_remote)
         self.timeout = timeout
         self._dimension = dimension
+
+    @classmethod
+    def _validate_host(cls, host: str, allow_remote: bool = False) -> str:
+        parsed = urlparse(host)
+        if parsed.scheme not in cls._ALLOWED_SCHEMES:
+            raise ValueError(f"Unsupported scheme for Ollama host: {parsed.scheme!r}")
+        hostname = parsed.hostname or ""
+        if hostname in cls._ALLOWED_HOSTS:
+            return host
+        if allow_remote:
+            try:
+                addr = ipaddress.ip_address(hostname)
+                if addr.is_loopback or addr.is_link_local:
+                    return host
+                if addr.is_private and allow_remote:
+                    return host
+            except ValueError:
+                pass
+            return host
+        try:
+            addr = ipaddress.ip_address(hostname)
+            if addr.is_loopback or addr.is_link_local or addr.is_private:
+                return host
+        except ValueError:
+            pass
+        raise ValueError(
+            f"Host {hostname!r} not allowed for OllamaEmbeddingProvider. "
+            "Use localhost/loopback or set allow_remote=True for trusted private endpoints."
+        )
 
     def embed(self, text: str) -> List[float]:
         import requests
