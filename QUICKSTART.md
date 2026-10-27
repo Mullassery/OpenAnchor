@@ -280,7 +280,7 @@ A: v0.1 is production-ready for single-tenant deployments. v1.0 adds multi-tenan
 
 ## Support
 
-- GitHub issues: https://github.com/Mullassery/openanchor/issues
+- GitHub issues: ../openanchor/issues
 - Docs: See README.md for comprehensive guide
 - Examples: See `examples/` directory
 

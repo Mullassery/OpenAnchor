@@ -156,7 +156,7 @@ set_budget_limit(max_spend=100.00, period=BudgetPeriod.DAILY)
 
 ## Commit Details
 
-**Repository:** https://github.com/Mullassery/PyCostAudit
+**Repository:** ../PyCostAudit
 **Commit:** 848ef22
 **Message:** "PyCostAudit v0.5: Production cleanup - cost calculation core only"
 
@@ -226,7 +226,7 @@ Result: A product that does cost calculation better than anything else, and inte
 
 ## Files Pushed
 
-**GitHub:** https://github.com/Mullassery/PyCostAudit
+**GitHub:** ../PyCostAudit
 **Branch:** main
 **Latest Commit:** 848ef22 (PyCostAudit v0.5 cleanup)
 

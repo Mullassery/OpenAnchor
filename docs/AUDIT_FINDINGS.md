@@ -1,6 +1,6 @@
 # Audit Report: openanchor
 Date: 2026-10-26 | Type: Read-only systems design audit  
-Repo: https://github.com/Mullassery/openanchor.git (local: /Users/georgimullassery/Desktop/Projects/openanchor) | Branch: main | Status: clean
+Repo: ../openanchor (local: /Users/georgimullassery/Desktop/Projects/openanchor) | Branch: main | Status: clean
 
 ## Overview
 LLM token-attribution middleware with 6D attribution, LangChain integration, real OpenTelemetry export, semantic caching, cost governance. Python package `openanchor` (pyproject). Apache 2.0.

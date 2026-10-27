@@ -2,9 +2,9 @@
 Post three open-source Python/Rust projects to Reddit and Twitter to maximize GitHub stars.
 
 Projects:
-- PyStreamXL: https://github.com/Mullassery/PyStreamXL (streaming XLSX, 4-5x faster than openpyxl)
-- statguard: https://github.com/Mullassery/statguard (data quality, 13x faster than pandera)
-- AudiencePro: https://github.com/Mullassery/AudiencePro (customer segmentation, Martech)
+- PyStreamXL: ../PyStreamXL (streaming XLSX, 4-5x faster than openpyxl)
+- statguard: ../statguard (data quality, 13x faster than pandera)
+- AudiencePro: ../AudiencePro (customer segmentation, Martech)
 
 # Plan
 

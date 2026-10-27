@@ -2,7 +2,7 @@
 
 LLM token-attribution middleware — capture, attribute, and observe every LLM call, with real OpenTelemetry export and real semantic caching.
 
-[![Tests](https://github.com/Mullassery/openanchor/actions/workflows/ci.yml/badge.svg)](https://github.com/Mullassery/openanchor/actions/workflows/ci.yml)
+[![Tests](../openanchor/actions/workflows/ci.yml/badge.svg)](../openanchor/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/openanchor)](https://pypi.org/project/openanchor/)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue)](https://www.python.org)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
@@ -231,13 +231,13 @@ bandit --ini .bandit -r openanchor/
 
 ## Related projects
 
-- [PyAPICheck](https://github.com/Mullassery/PyAPICheck) — API security discovery with cited risk scores
-- [PyBeamGuard](https://github.com/Mullassery/PyBeamGuard) — Apache Beam and Dataflow pipeline analysis
-- [PyNetworkIntel](https://github.com/Mullassery/PyNetworkIntel) — network discovery and anomaly detection
-- [OpenAnchor](https://github.com/Mullassery/OpenAnchor) — LLM token-usage intelligence middleware
-- [PyAgentHound](https://github.com/Mullassery/PyAgentHound) — trace, detect, and explain AI agent failures
-- [PyVectorHound](https://github.com/Mullassery/PyVectorHound) — diagnose RAG retrieval failures
-- [Browse all projects](https://github.com/Mullassery?tab=repositories)
+- [PyAPICheck](../PyAPICheck) — API security discovery with cited risk scores
+- [PyBeamGuard](../PyBeamGuard) — Apache Beam and Dataflow pipeline analysis
+- [PyNetworkIntel](../PyNetworkIntel) — network discovery and anomaly detection
+- [OpenAnchor](../OpenAnchor) — LLM token-usage intelligence middleware
+- [PyAgentHound](../PyAgentHound) — trace, detect, and explain AI agent failures
+- [PyVectorHound](../PyVectorHound) — diagnose RAG retrieval failures
+- [Browse all projects](../Mullassery-profile)
 
 ## License
 

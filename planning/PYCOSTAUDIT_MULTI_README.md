@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.9+](https://badge.fury.io/py/pycostaudit-multi.svg)](https://www.python.org/downloads/)
 
-**PyCostAudit-Multi** tracks LLM costs across 20+ cloud providers and 10+ open-source APIs in real-time. It's the cost calculation core that powers [OpenAnchor](https://github.com/Mullassery/openanchor) and your multi-model LLM teams.
+**PyCostAudit-Multi** tracks LLM costs across 20+ cloud providers and 10+ open-source APIs in real-time. It's the cost calculation core that powers [OpenAnchor](../openanchor) and your multi-model LLM teams.
 
 ---
 
@@ -401,7 +401,7 @@ pycostaudit_multi/
 
 ## OpenAnchor Integration
 
-[OpenAnchor](https://github.com/Mullassery/openanchor) uses PyCostAudit-Multi as its cost calculation core:
+[OpenAnchor](../openanchor) uses PyCostAudit-Multi as its cost calculation core:
 
 ```python
 # OpenAnchor calls PyCostAudit-Multi for every LLM call
@@ -530,7 +530,7 @@ MIT License. See [LICENSE](../LICENSE) for details.
 
 ## References
 
-- [OpenAnchor](https://github.com/Mullassery/openanchor) — Cost optimization middleware
+- [OpenAnchor](../openanchor) — Cost optimization middleware
 - [Anthropic Pricing](https://www.anthropic.com/pricing)
 - [OpenAI Pricing](https://openai.com/pricing)
 - [Google Pricing](https://ai.google.dev/pricing)
@@ -539,8 +539,8 @@ MIT License. See [LICENSE](../LICENSE) for details.
 
 ## Support
 
-- **GitHub Issues:** [Report bugs](https://github.com/Mullassery/PyCostAudit/issues)
-- **Discussions:** [Ask questions](https://github.com/Mullassery/PyCostAudit/discussions)
+- **GitHub Issues:** [Report bugs](../PyCostAudit/issues)
+- **Discussions:** [Ask questions](../PyCostAudit/discussions)
 - **Email:** mullassery@gmail.com
 
 ---

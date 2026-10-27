@@ -3,7 +3,7 @@
 ## Status: PARTIALLY EXECUTED ✅ (with merge complications)
 
 **Date:** July 14, 2026
-**Repository:** https://github.com/Mullassery/PyCostAudit
+**Repository:** ../PyCostAudit
 **Branch:** main
 
 ---
