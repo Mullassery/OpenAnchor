@@ -96,25 +96,29 @@ class OllamaEmbeddingProvider(EmbeddingProvider):
         hostname = parsed.hostname or ""
         if hostname in cls._ALLOWED_HOSTS:
             return host
-        if allow_remote:
-            try:
-                addr = ipaddress.ip_address(hostname)
-                if addr.is_loopback or addr.is_link_local:
-                    return host
-                if addr.is_private and allow_remote:
-                    return host
-            except ValueError:
-                pass
-            return host
         try:
             addr = ipaddress.ip_address(hostname)
-            if addr.is_loopback or addr.is_link_local or addr.is_private:
+            if addr.is_loopback:
                 return host
-        except ValueError:
+            # Block link-local (includes cloud metadata 169.254.169.254) and multicast/reserved
+            if addr.is_link_local or addr.is_reserved or addr.is_multicast:
+                raise ValueError(f"Host {hostname!r} is not allowed (link-local/reserved).")
+            if addr.is_private:
+                if allow_remote:
+                    return host
+                raise ValueError(
+                    f"Host {hostname!r} is a private address. Set allow_remote=True for trusted private endpoints."
+                )
+        except ValueError as e:
+            if "not allowed" in str(e).lower() or "private address" in str(e).lower():
+                raise
+            # Not an IP, might be hostname - only allow if explicitly remote and not suspicious
             pass
+        if allow_remote:
+            return host
         raise ValueError(
             f"Host {hostname!r} not allowed for OllamaEmbeddingProvider. "
-            "Use localhost/loopback or set allow_remote=True for trusted private endpoints."
+            "Use localhost/loopback or set allow_remote=True for trusted endpoints."
         )
 
     def embed(self, text: str) -> List[float]:
